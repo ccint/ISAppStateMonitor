@@ -1,0 +1,5 @@
+CGO_CFLAGS="-I/usr/local/Cellar/rocksdb/5.12.4/include" \
+CGO_LDFLAGS="-L/usr/local/Cellar/rocksdb/5.12.4/lib -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy -llz4" \
+  go get github.com/tecbot/gorocksdb
+
+  

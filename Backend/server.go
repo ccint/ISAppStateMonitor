@@ -23,8 +23,8 @@ func main() {
 	http.HandleFunc("/report", reportHandler)
 	http.HandleFunc("/upload_dsym", uploadDsymHandler)
 	http.ListenAndServeTLS(":4000",
-		 	             "/Users/Sky/Desktop/serverCer/server.cer",
-		                 "/Users/Sky/Desktop/serverCer/server.key", nil)
+		 	             "./certificate/server.cer",
+		                 "./certificate/server.key", nil)
 }
 
 type ResultStruct struct {
