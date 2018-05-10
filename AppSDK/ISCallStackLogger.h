@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <mach/mach.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 bool bs_backtraceOfCurrentThread(uintptr_t *buffer,
                                  int32_t bufferMaxSize,

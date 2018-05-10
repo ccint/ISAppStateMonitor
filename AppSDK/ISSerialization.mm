@@ -7,6 +7,7 @@
 //
 
 #import "ISSerialization.h"
+#import <CoreGraphics/CoreGraphics.h>
 #include <vector>
 
 typedef struct ISSerializationPair {
