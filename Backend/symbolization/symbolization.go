@@ -16,7 +16,7 @@ var dysmDB *gorocksdb.DB
 var ro *gorocksdb.ReadOptions
 var wo *gorocksdb.WriteOptions
 
-func OpenDB() {
+func openDB() {
 	ro = gorocksdb.NewDefaultReadOptions()
 	wo = gorocksdb.NewDefaultWriteOptions()
 
@@ -34,10 +34,14 @@ func OpenDB() {
 	}
 }
 
-func CloseDB() {
+func closeDB() {
 	if dysmDB != nil {
 		dysmDB.Close()
 	}
+}
+
+func InitSymbolization() {
+	openDB()
 }
 
 func ImportDSYMTable(filePath string, uuid string) error {

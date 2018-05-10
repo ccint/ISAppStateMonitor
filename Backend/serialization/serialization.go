@@ -82,6 +82,20 @@ func (s *AutoSerializeArray) AppendString(str *string) {
 	s.AppendBytes(&strBytes)
 }
 
+func (s *AutoSerializeArray) AppendArray(array *AutoSerializeArray){
+	bytes := array.SerializedBytes()
+	if bytes != nil && len(*bytes) > 0 {
+		s.AppendBytes(bytes)
+	}
+}
+
+func (s *AutoSerializeArray) AppendDic(dic *AutoSerializeDic) {
+	bytes := dic.SerializedBytes()
+	if bytes != nil && len(*bytes) > 0 {
+		s.AppendBytes(bytes)
+	}
+}
+
 // Array Accesor
 func (s *AutoSerializeArray) BytesAtIndex(idx int) (*[]byte, bool) {
 	if idx < len(s.bytes) {
@@ -123,6 +137,28 @@ func (s *AutoSerializeArray) StringAtIndex(idx int) (*string, bool) {
 	if bs != nil {
 		str := string(*bs)
 		return &str, true
+	} else {
+		return nil, false
+	}
+}
+
+func (s *AutoSerializeArray) ArrayAtIndex(idx int) (*AutoSerializeArray, bool) {
+	bs, _ := s.BytesAtIndex(idx)
+	if bs != nil {
+		array := NewAutoSerializedArray()
+		array.SetSerializedBytes(bs)
+		return array, true
+	} else {
+		return nil, false
+	}
+}
+
+func (s *AutoSerializeArray) DicAtIndex(idx int) (*AutoSerializeDic, bool) {
+	bs, _ := s.BytesAtIndex(idx)
+	if bs != nil {
+		dic := NewAutoSerializedDic()
+		dic.SetSerializedBytes(bs)
+		return dic, true
 	} else {
 		return nil, false
 	}
@@ -205,6 +241,20 @@ func (s *AutoSerializeDic) SetString(str *string, key string) {
 	}
 }
 
+func (s *AutoSerializeDic) SetArray(array *AutoSerializeArray, key string){
+	bytes := array.SerializedBytes()
+	if bytes != nil && len(*bytes) > 0 && len(key) > 0 {
+		s.SetBytes(bytes, key)
+	}
+}
+
+func (s *AutoSerializeDic) SetDic(dic *AutoSerializeDic, key string) {
+	bytes := dic.SerializedBytes()
+	if bytes != nil && len(*bytes) > 0 && len(key) > 0 {
+		s.SetBytes(bytes, key)
+	}
+}
+
 // Dic Accesor
 func (s *AutoSerializeDic) BytesWithKey(key string) (*[]byte, bool) {
 	if len(key) > 0 {
@@ -257,6 +307,28 @@ func (s *AutoSerializeDic) StringWithKey(key string) (*string, bool) {
 	if bs != nil {
 		str := string(*bs)
 		return &str, true
+	} else {
+		return nil, false
+	}
+}
+
+func (s *AutoSerializeDic) ArrayWithKey(key string) (*AutoSerializeArray, bool) {
+	bs, _ := s.BytesWithKey(key)
+	if bs != nil {
+		array := NewAutoSerializedArray()
+		array.SetSerializedBytes(bs)
+		return array, true
+	} else {
+		return nil, false
+	}
+}
+
+func (s *AutoSerializeDic) DicWithKey(key string) (*AutoSerializeDic, bool) {
+	bs, _ := s.BytesWithKey(key)
+	if bs != nil {
+		dic := NewAutoSerializedDic()
+		dic.SetSerializedBytes(bs)
+		return dic, true
 	} else {
 		return nil, false
 	}
