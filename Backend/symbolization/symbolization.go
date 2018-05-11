@@ -10,21 +10,41 @@ import (
 	"bufio"
 	"strconv"
 	"fmt"
+	"bytes"
+	"time"
 )
 
 var dysmDB *gorocksdb.DB
-var ro *gorocksdb.ReadOptions
 var wo *gorocksdb.WriteOptions
 
+type  comparator struct {
+}
+
+func (s *comparator) Compare(a, b []byte) int {
+	if len(a) == len(b) {
+		return bytes.Compare(a, b)
+	} else {
+		return len(a) - len(b)
+	}
+}
+
+func (s *comparator) Name() string {
+	return "leveldb.BytewiseComparator"
+}
+
 func openDB() {
-	ro = gorocksdb.NewDefaultReadOptions()
 	wo = gorocksdb.NewDefaultWriteOptions()
 
 	bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
 	bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
+	filter := gorocksdb.NewBloomFilter(10)
+	bbto.SetFilterPolicy(filter)
+
 	opts := gorocksdb.NewDefaultOptions()
 	opts.SetBlockBasedTableFactory(bbto)
 	opts.SetCreateIfMissing(true)
+	opts.SetComparator(new(comparator))
+	opts.SetPrefixExtractor(gorocksdb.NewFixedPrefixTransform(44))
 
 	db, err := gorocksdb.OpenDb(opts, "./resource/dsym/")
 	if err != nil {
@@ -48,6 +68,7 @@ func ImportDSYMTable(filePath string, uuid string) error {
 	fileName := getFileName(filePath)
 	fileInfos := strings.Split(fileName, "&")
 	arch := fileInfos[len(fileInfos) - 2]
+	timeNow := time.Now()
 	fmt.Println("start import symbols from: " + filePath)
 
 	if len(uuid) <= 0 {
@@ -62,6 +83,11 @@ func ImportDSYMTable(filePath string, uuid string) error {
 	defer file.Close()
 
 	input := bufio.NewScanner(file)
+
+	writeBatch := gorocksdb.NewWriteBatch()
+
+	defer writeBatch.Destroy()
+
 	for input.Scan() {
 		line := input.Text()
 		elements := strings.Split(line, "\u0009")
@@ -73,31 +99,27 @@ func ImportDSYMTable(filePath string, uuid string) error {
 			return errors.New("parse failed, invalid line :" + line)
 		}
 
-		endAdr, err1 := strconv.ParseUint(elements[1], 16, 0)
-		if err1 != nil {
-			return errors.New("parse failed, invalid line :" + line)
-		}
-
 		symbols := elements[2]
 
 		if len(symbols) <= 0 {
 			return errors.New("parse failed, invalid line :" + line)
 		}
 
-		diff := endAdr - startAdr
-
-		for i := 0; i < int(diff); i++ {
-			key := uuid + "_" + arch + "_" + strconv.FormatUint(startAdr + uint64(i), 16)
-			var value string
-			if i == 0 {
-				value = symbols
-			} else {
-				value = strconv.FormatUint(startAdr,16)
-			}
-			dysmDB.Put(wo, []byte(key), []byte(value))
-		}
+		key := uuid + "_" + arch + "_" + strconv.FormatUint(startAdr, 16)
+		writeBatch.Put([]byte(key), []byte(symbols))
 	}
-	fmt.Printf("import %s succeed\n", filePath)
+
+	writeErr := dysmDB.Write(wo, writeBatch)
+
+	if writeErr != nil {
+		fmt.Println(writeErr)
+		return writeErr
+	} else {
+		fmt.Printf("import %s succeed\n", filePath)
+		fmt.Printf("time cost: ")
+		fmt.Println(time.Since(timeNow))
+	}
+
 	return nil
 }
 
@@ -111,23 +133,20 @@ func Symbol(offset uint64, uuid string, arch string) (string, error) {
 		return "", errors.New("invalid uuid")
 	}
 
-	v, err := dysmDB.Get(ro, []byte(uuid + "_" + arch + "_" + offsetStr))
-	if err != nil {
-		return "", err
+	iterator := dysmDB.NewIterator(gorocksdb.NewDefaultReadOptions())
+
+	defer iterator.Close()
+
+	prefix := uuid + "_" + arch + "_"
+	iterator.SeekForPrev([]byte(prefix + offsetStr))
+	if iterator.ValidForPrefix([]byte(prefix)) {
+		value := string(iterator.Value().Data())
+		if len(value) > 0 {
+			return value, nil
+		}
 	}
 
-	vStr := string(v.Data())
-	_, err0 := strconv.ParseUint(vStr, 16, 0)
-	if err0 == nil {
-		realKey := uuid + "_" + arch + "_" + vStr
-		realV, err1 := dysmDB.Get(ro, []byte(realKey))
-		if err1 != nil {
-			return "", err1
-		}
-		return string(realV.Data()), nil
-	} else {
-		return string(vStr), nil
-	}
+	return  "", nil
 }
 
 func getFileName(filePath string) string {
