@@ -4,14 +4,11 @@ import (
 	"net/http"
 	"./routers"
 	"./symbolization"
-	"./report"
 )
 
 func main() {
 	routers.SetupReportHandler()
 	symbolization.InitSymbolization()
-
-	report.Mongotest()
 
 	http.HandleFunc("/report", routers.ReportHandler)
 	http.HandleFunc("/upload_dsym", routers.UploadDsymHandler)

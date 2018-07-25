@@ -8,6 +8,7 @@ import (
 	"time"
 	"../symbolization"
 	"../serialization"
+	"../reportStore"
 	"github.com/tecbot/gorocksdb"
 	"log"
 )
@@ -80,7 +81,7 @@ func ReportHandler(w http.ResponseWriter, req *http.Request) {
 
 
 	w.Header().Set("Content-Type", "application/json")
-	payload := ResultStruct{0, ""}
+	payload := ResultStruct{0, "Hello Girl"}
 	json.NewEncoder(w).Encode(payload)
 
 	go cacheReport(&data)
@@ -91,11 +92,11 @@ func cacheReport(report *[]byte) {
 }
 
 func persistReport(report *[]byte) {
-	printReport(report)
+	archiveReport(report)
 	<- limitChan
 }
 
-func printReport(report *[]byte) {
+func archiveReport(report *[]byte) {
 	timeNow := time.Now()
 	dataDic := serialization.NewAutoSerializedDic()
 	dataDic.SetSerializedBytes(report)
@@ -105,65 +106,91 @@ func printReport(report *[]byte) {
 	devUUID, _ := dataDic.StringWithKey("dev_uuid")
 	arch, _ := dataDic.StringWithKey("arch")
 	reportType, _ := dataDic.StringWithKey("type")
-	fmt.Println("Report Start")
-	fmt.Println("Type: " + *reportType)
-	fmt.Println("AppVersion: " + *appVersion)
-	fmt.Println("AppID: " + *appId)
-	fmt.Println("Device: " + *devUUID)
-	fmt.Println("Architecture: " + *arch + "\n")
-	fmt.Println("Report Content: ")
 
-	dataArray, _ := dataDic.ArrayWithKey("data")
-	bsDic, _ := dataArray.DicAtIndex(0)
-	dur, _ := bsDic.Float64WithKey("dur")
-	date, _ := bsDic.Float64WithKey("time")
-	fmt.Printf("Runloop Duration: %f\n", dur)
-	fmt.Printf("Record Time: %f\n", date)
+	if *reportType == "mt_out" {
+		dataArray, _ := dataDic.ArrayWithKey("data")
 
-	bsDetailDic, _ := bsDic.DicWithKey("bs")
-	uuidMap := make(map[string] string)
-	allKeys := bsDetailDic.Allkeys()
-	for i := 0; i < len(allKeys); i++ {
-		v, _ := bsDetailDic.StringWithKey(allKeys[i])
-		uuidMap[allKeys[i]] = *v
-	}
-	bsArray, _ := bsDetailDic.ArrayWithKey("bs")
-	fmt.Println("Thread BackTrace: ")
-	for i := 0; i < bsArray.Count(); i++ {
-		threadDic, _ := bsArray.DicAtIndex(i)
-		threadName, ok := threadDic.StringWithKey("thread_name")
-		if ok {
-			fmt.Println("Thread Name: " + *threadName)
-		} else {
-			fmt.Println("Thread Name: " + "")
-		}
-		threadBsArray, _ := threadDic.ArrayWithKey("th_stack")
-		if threadBsArray != nil {
-			for i := 0; i < threadBsArray.Count(); i++ {
-				threadBsDic, _ := threadBsArray.DicAtIndex(i)
-				modeName, _ := threadBsDic.StringWithKey("mod_name")
-				retAdr, _ := threadBsDic.Uint64WithKey("ret_adr")
-				loadAdr, _ := threadBsDic.Uint64WithKey("load_adr")
-				var symbol string
-				if v, ok := uuidMap[*modeName]; ok == true {
-					offset := retAdr - loadAdr
-					v, err := symbolization.Symbol(offset, v, *arch)
-					if err != nil {
-						fmt.Println("get symbol err: " + err.Error())
-					} else {
-						symbol = v
-					}
-				}
-				if len(symbol) > 0 {
-					fmt.Printf("%-2d %-30s  0x%x  %s\n", i, *modeName, retAdr, symbol)
-				} else {
-					fmt.Printf("%-2d %-30s  0x%x  0x%x\n", i, *modeName, retAdr, loadAdr)
-				}
+		for i := 0; i < dataArray.Count(); i++ {
+			dataDic, _ := dataArray.DicAtIndex(0)
+			dur, _ := dataDic.Float64WithKey("dur")
+			date, _ := dataDic.Float64WithKey("time")
+
+			anrReport := reportStore.AnrReport{}
+			anrReport.Init()
+			anrReport.AppVersion = *appVersion
+			anrReport.AppId = *appId
+			anrReport.DeviveUUID = *devUUID
+			anrReport.Arch = *arch
+
+			anrReport.Duration = dur
+			anrReport.Timestamp = date
+
+			backtrace := reportStore.Backtrace{}
+
+			bsDetailDic, _ := dataDic.DicWithKey("bs")
+			uuidMap, _ := bsDetailDic.DicWithKey("images")
+			appImageName, _ := bsDetailDic.StringWithKey("appImageName")
+			imageMaps := make(map[string] string)
+
+			allKeys := uuidMap.Allkeys()
+			for i := 0; i < len(allKeys); i++ {
+				v, _ := uuidMap.StringWithKey(allKeys[i])
+				imageMaps[allKeys[i]] = *v
 			}
-			fmt.Printf("\n")
+
+			backtrace.ImageMaps = imageMaps
+			backtrace.AppImageName = *appImageName
+
+			bsArray, _ := bsDetailDic.ArrayWithKey("bs")
+			stacks := new([]reportStore.Stack)
+			for i := 0; i < bsArray.Count(); i++ {
+				stack := reportStore.Stack{}
+				threadDic, _ := bsArray.DicAtIndex(i)
+				threadName, ok := threadDic.StringWithKey("thread_name")
+				if ok {
+					stack.ThreadName = *threadName
+				}
+
+				threadBsArray, _ := threadDic.ArrayWithKey("th_stack")
+				if threadBsArray != nil {
+					frames := new([]reportStore.Frame)
+					for i := 0; i < threadBsArray.Count(); i++ {
+						frame := reportStore.Frame{}
+						threadBsDic, _ := threadBsArray.DicAtIndex(i)
+						modeName, _ := threadBsDic.StringWithKey("mod_name")
+						retAdr, _ := threadBsDic.Uint64WithKey("ret_adr")
+						loadAdr, _ := threadBsDic.Uint64WithKey("load_adr")
+						var symbol string
+						if uuid, ok := imageMaps[*modeName]; ok == true {
+							offset := retAdr - loadAdr
+							v, err := symbolization.Symbol(offset, uuid, *arch)
+							if err != nil {
+								fmt.Println("get symbol err: " + err.Error())
+							} else {
+								symbol = v
+								if *modeName == *appImageName {
+									backtrace.IsSymbolized = true
+								}
+							}
+						}
+						frame.ImageName = *modeName
+						frame.RetAddress = retAdr
+						frame.LoadAddress = loadAdr
+						if len(symbol) > 0 {
+							frame.RetSymbol = symbol
+						}
+
+						*frames = append(*frames, frame)
+					}
+					stack.Frames = *frames
+				}
+				*stacks = append(*stacks, stack)
+			}
+			backtrace.Stacks = *stacks
+			anrReport.Backtrace = backtrace
+			anrReport.SaveToStorage()
 		}
 	}
-
-	fmt.Printf("PrintTime: ")
+	fmt.Printf("saveTime: ")
 	fmt.Println(time.Since(timeNow))
 }
