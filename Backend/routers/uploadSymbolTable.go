@@ -2,7 +2,6 @@ package routers
 
 import (
 	"net/http"
-	"fmt"
 	"os"
 	"io"
 	"log"
@@ -12,9 +11,14 @@ import (
 	"path"
 	"strings"
 	"../symbolization"
+	"fmt"
 )
 
 func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
+	go handleDsymReq(w, req)
+}
+
+func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "POST":
 		req.ParseMultipartForm(32 << 20)

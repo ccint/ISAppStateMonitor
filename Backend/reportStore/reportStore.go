@@ -5,6 +5,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"fmt"
 	"time"
+	"strings"
 )
 
 var (
@@ -52,6 +53,7 @@ type (
 
 	Issue struct {
 		IssueId                 bson.ObjectId `bson:"_id"`
+		IssueSourceFile 		string
 		IssueIdentifier         string
 		IssueCount              uint64
 		IssueAffectVersionStart string
@@ -101,7 +103,7 @@ func (s *AnrReport) SaveToStorage() error {
 }
 
 func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
-	identifier := s.getIssueIdentifier()
+	identifier, sourceFile := s.getIssueIdentifierAndSourceFile()
 
 	if identifier == nil {
 		fmt.Println("error: identifier is nil")
@@ -118,6 +120,7 @@ func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
 		// issue not exist
 		issue.Init()
 		issue.IssueIdentifier = *identifier
+		issue.IssueSourceFile = *sourceFile
 		issue.IssueCreateTime = float64(time.Now().Unix() * 1000)
 		issue.IssueCount = 1
 		issue.IssueAffectVersionStart = s.AppVersion
@@ -144,24 +147,30 @@ func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
 	}
 }
 
-func (s *AnrReport) getIssueIdentifier() *string {
+func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 	if len(s.Backtrace.Stacks) == 0 || len(s.Backtrace.Stacks[0].Frames) == 0 {
-		return nil
+		return nil, nil
 	}
-	result := new(string)
+	identifier := new(string)
+	sourceFile := new(string)
 
 	mainStack := s.Backtrace.Stacks[0]
 	for _, frame := range  mainStack.Frames {
 		if frame.ImageName == s.Backtrace.AppImageName && frame.RetSymbol != "main" {
-			*result = frame.RetSymbol
-			break
+			*identifier = frame.RetSymbol
+			splits := strings.Split(frame.RetSymbol, " ")
+			if len(splits) > 1 {
+				*sourceFile = splits[len(splits) - 1]
+			} else {
+				*sourceFile = frame.ImageName
+			}
+			return identifier, sourceFile
 		}
 	}
-	if len(*result) == 0 {
-		*result = mainStack.Frames[0].RetSymbol
-	}
 
-	return result
+	*identifier = mainStack.Frames[0].RetSymbol
+	*sourceFile = mainStack.Frames[0].ImageName
+	return identifier, sourceFile
 }
 
 var reportBuffer *[]interface{}
@@ -198,13 +207,27 @@ func GetAllReports() *[]AnrReport {
 	session := getSession()
 	defer session.Close()
 
-	var results *[]AnrReport
+	var results []AnrReport
 
 	c := session.DB(dataBase).C(reportCollection)
-	err := c.Find(nil).All(results)
+	err := c.Find(nil).All(&results)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return results
+	return &results
+}
+
+func GetAllIssues() *[]Issue {
+	session := getSession()
+	defer session.Close()
+
+	var results []Issue
+
+	c := session.DB(dataBase).C(issueCollection)
+	err := c.Find(nil).All(&results)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return &results
 }
 

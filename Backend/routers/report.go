@@ -71,6 +71,10 @@ type ResultStruct struct {
 }
 
 func ReportHandler(w http.ResponseWriter, req *http.Request) {
+	go handleReport(w, req)
+}
+
+func handleReport(w http.ResponseWriter, req *http.Request) {
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -79,11 +83,9 @@ func ReportHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
 	w.Header().Set("Content-Type", "application/json")
 	payload := ResultStruct{0, "Hello Girl"}
 	json.NewEncoder(w).Encode(payload)
-
 	go cacheReport(&data)
 }
 
