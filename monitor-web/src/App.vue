@@ -12,15 +12,13 @@
                 </Submenu>
             </Menu>
         </Sider>
-        <Layout :style="{marginLeft: '200px', background: 'rgb(16, 36, 49)', overflow: 'scroll'}">
-            <Content :style="{padding: '0 30px 30px 30px'}">
-                <Breadcrumb :style="{margin: '30px 0', color: 'color: white'}">
-                    <BreadcrumbItem style="font-size: 17px; color: white" to="/anr">ANR</BreadcrumbItem>
-                    <BreadcrumbItem style="font-size: 17px; color: white" to="/anr/issue_detail/">Issue Details</BreadcrumbItem>
-                </Breadcrumb>
-                <router-view/>
-            </Content>
-        </Layout>
+        <div class="right-content">
+            <Breadcrumb :style="{margin: '30px 0', color: 'color: white'}">
+                <BreadcrumbItem style="font-size: 17px; color: white" to="/anr">ANR</BreadcrumbItem>
+                <BreadcrumbItem style="font-size: 17px; color: white" to="/anr/issue_detail/">Issue Details</BreadcrumbItem>
+            </Breadcrumb>
+            <router-view/>
+        </div>
     </div>
 </template>
 
@@ -57,5 +55,10 @@
     }
     .ivu-breadcrumb a {
         color: white !important;
+    }
+    .right-content {
+        padding: 0 30px 30px 30px;
+        margin-left: 200px;
+        overflow: scroll;
     }
 </style>

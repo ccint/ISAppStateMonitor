@@ -1,7 +1,7 @@
 <template>
     <div class="listcontaner">
         <div class="issueList" v-for="issue in issues" :key="issue.id">
-            <IssueCell :info="issue">
+            <IssueCell class="cell" :info="issue">
             </IssueCell>
         </div>
     </div>
@@ -9,7 +9,7 @@
 
 <script>
 // @ is an alias to /src
-import IssueCell from '../components/IssueCell'
+import IssueCell from '../components/StackCell'
 import { mapState, mapActions } from 'vuex'
 
 export default {
@@ -35,11 +35,17 @@ export default {
     .issueList {
         display: flex;
         flex-direction: column;
-        width: 1400px;
+        flex: 1 1 auto;
     }
     .listcontaner {
+        background: white;
+        padding: 15px;
         border-radius: 10px;
         overflow: hidden;
-        width: 1400px;
+        max-width: 1500px;
+        min-width: 850px;
+    }
+    .cell {
+        margin-bottom: 15px;
     }
 </style>
