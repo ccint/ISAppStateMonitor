@@ -1,5 +1,5 @@
 <template>
-    <div class="content">
+    <div class="content" @click="contentClicked">
         <div class="issue text">
             <div class="title ellipsis">
                 {{info.title}}
@@ -27,6 +27,11 @@ export default {
   name: 'IssueCell',
   props: {
     info: {}
+  },
+  methods: {
+    contentClicked () {
+      this.$emit('click')
+    }
   }
 }
 </script>
@@ -59,16 +64,13 @@ export default {
         .title {
             font-size: 14px;
             line-height: 1.4;
-            font-family: Source Sans Pro,sans-serif;
             color: rgb(14, 30, 40);
             font-weight: 500;
         }
         .detail {
-            font-size: 13px;
             padding-top: 3px;
             line-height: 1.5;
             color: rgb(90, 90, 90);
-            font-family: Source Sans Pro,sans-serif;
         }
         .ellipsis {
             min-width: 0;
@@ -84,9 +86,9 @@ export default {
         align-items: center;
         padding: 15px;
         color: rgb(102, 117, 127);
-        font-size: 13px;
         font-weight: 500;
         width: 300px;
+        flex: 0 0 auto;
         &:after {
             content: ' ';
             position: absolute;
@@ -99,6 +101,7 @@ export default {
     }
     .count {
         width: 150px;
+        flex: 0 0 auto;
     }
     .issue {
         flex: 1 1 auto;

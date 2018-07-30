@@ -13,5 +13,7 @@ func main() {
 	http.HandleFunc("/report", routers.ReportHandler)
 	http.HandleFunc("/upload_dsym", routers.UploadDsymHandler)
 	http.HandleFunc("/query_issues", routers.HandleQueryIssues)
+	http.HandleFunc("/issue_detail", routers.GetAllReportsOfIssue)
+	http.HandleFunc("/issue_session", routers.GetReportDetail)
 	http.ListenAndServe(":4000", nil)
 }

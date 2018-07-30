@@ -1,7 +1,7 @@
 <template>
     <div class="listcontaner">
-        <div class="issueList" v-for="issue in issues" :key="issue.id">
-            <IssueCell class="cell" :info="issue">
+        <div class="issueList">
+            <IssueCell :info="issue" v-for="(issue, idx) in issues" :key="issue.id" @click="gotoIssueDetail(idx)">
             </IssueCell>
         </div>
     </div>
@@ -9,7 +9,7 @@
 
 <script>
 // @ is an alias to /src
-import IssueCell from '../components/StackCell'
+import IssueCell from '../components/IssueCell'
 import { mapState, mapActions } from 'vuex'
 
 export default {
@@ -19,11 +19,20 @@ export default {
   },
   computed: {
     ...mapState('anr', {
-      issues: state => state.issueList
+      issues: state => state.issueList,
+      issueDetail: state => state.issueDetail
     })
   },
   methods: {
-    ...mapActions('anr', ['getIssueList'])
+    ...mapActions('anr', ['getIssueList', 'getIssueDetail']),
+    gotoIssueDetail (idx) {
+      let issue = this.issues[idx]
+      let id = issue.id
+      this.getIssueDetail({id}).then(() => {
+        let sid = this.issueDetail.sessions[0]
+        this.$router.push(`/anr/issue_detail/${id}/session/${sid}`)
+      })
+    }
   },
   beforeMount () {
     this.getIssueList()
@@ -39,13 +48,9 @@ export default {
     }
     .listcontaner {
         background: white;
-        padding: 15px;
         border-radius: 10px;
         overflow: hidden;
         max-width: 1500px;
         min-width: 850px;
-    }
-    .cell {
-        margin-bottom: 15px;
     }
 </style>

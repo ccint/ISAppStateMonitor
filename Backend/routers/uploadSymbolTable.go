@@ -15,7 +15,7 @@ import (
 )
 
 func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
-	go handleDsymReq(w, req)
+	handleDsymReq(w, req)
 }
 
 func handleDsymReq(w http.ResponseWriter, req *http.Request) {

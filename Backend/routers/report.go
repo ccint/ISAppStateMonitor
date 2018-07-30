@@ -71,7 +71,7 @@ type ResultStruct struct {
 }
 
 func ReportHandler(w http.ResponseWriter, req *http.Request) {
-	go handleReport(w, req)
+	handleReport(w, req)
 }
 
 func handleReport(w http.ResponseWriter, req *http.Request) {

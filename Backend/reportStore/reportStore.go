@@ -231,3 +231,36 @@ func GetAllIssues() *[]Issue {
 	return &results
 }
 
+func GetReportsOfIssue(issueId string) *[]string {
+	session := getSession()
+	defer session.Close()
+
+	var results []Issue
+
+	c := session.DB(dataBase).C(reportCollection)
+	err := c.Find(bson.M{"issue": bson.ObjectIdHex(issueId)}).All(&results)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var resultIds [] string
+	for _, result := range results {
+		resultIds = append(resultIds, result.IssueId.Hex())
+	}
+	return &resultIds
+}
+
+func GetReportOfId(reportId string) AnrReport {
+	session := getSession()
+	defer session.Close()
+
+	var result AnrReport
+
+	c := session.DB(dataBase).C(reportCollection)
+	err := c.FindId(bson.ObjectIdHex(reportId)).One(&result)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return result
+}
+

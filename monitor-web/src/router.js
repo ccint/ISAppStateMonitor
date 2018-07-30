@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import AnrIssueList from './views/AnrIssueList.vue'
+import AnrSessionDetail from './views/AnrIssueDetail.vue'
 
 Vue.use(Router)
 
@@ -11,6 +12,11 @@ export default new Router({
       path: '/anr/',
       name: 'anrIssueList',
       component: AnrIssueList
+    },
+    {
+      path: '/anr/issue_detail/:iid/session/:sid',
+      name: 'anrIssueDetail',
+      component: AnrSessionDetail
     }
   ]
 })

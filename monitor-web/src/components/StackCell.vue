@@ -8,7 +8,7 @@
                 {{`Thread: ${info.threadName}`}}
             </div>
             <div class="top-frame font-standard ellipsis" v-if="!showFrames">
-                {{info.topFrameSymbol}}
+                {{info.topFrameSymbol || "missing"}}
             </div>
         </div>
         <div class="frames" v-if="showFrames">
@@ -24,7 +24,7 @@
                         {{frame.source}}
                     </div>
                     <div class="symbol font-standard ellipsis" :style="style(frame.isHighlight, false)">
-                        {{frame.symbol}}
+                        {{frame.symbol || "missing"}}
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
     .content {
         display: flex;
         flex-direction: column;
@@ -118,8 +118,6 @@ export default {
             white-space: nowrap;
         }
         .font-standard {
-            font-family: Source Sans Pro,sans-serif;
-            font-size: 1em;
             color: #5a5a5a;
             letter-spacing: 0;
             -webkit-font-smoothing: antialiased;

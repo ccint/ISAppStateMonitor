@@ -1,0 +1,131 @@
+<template>
+    <div class="listcontaner">
+        <div class="navi">
+            <div class="navi-bar">
+                <font-awesome-icon size="2x" icon="caret-left" :style="{ color: hasNext ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}" @click="goNext(false)"/>
+                <div style="margin: 0 15px 0 15px;">
+                    {{sessionDate}}
+                </div>
+                <font-awesome-icon size="2x" icon="caret-right" :style="{ color: hasPrev ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}" @click="goNext(true)"/>
+            </div>
+            <div style="font-style: italic">
+                {{`App Version ${currentSession.appVersion}`}}
+            </div>
+        </div>
+        <div class="stack-header">
+            Stacktrace
+        </div>
+        <stack-cell class="stack-frames" :info="stack" v-for="(stack, idx) in stacks" :key="idx">
+        </stack-cell>
+    </div>
+</template>
+
+<script>
+import stackCell from '../components/StackCell'
+import { mapState, mapActions } from 'vuex'
+
+export default {
+  name: 'AnrIssueDetail',
+  components: {
+    stackCell
+  },
+  computed: {
+    ...mapState('anr', {
+      issueDetail: state => state.issueDetail,
+      currentSession: state => state.currentSession,
+      sessionCount: state => state.issueDetail.sessions.length
+    }),
+    hasNext () {
+      return this.currentSession.idx < this.sessionCount - 1 && this.currentSession.idx >= 0
+    },
+    hasPrev () {
+      return this.currentSession.idx > 0
+    },
+    sessionDate () {
+      let date = new Date(this.currentSession.date)
+      return date.toLocaleString()
+    },
+    stacks () {
+      let stacks = this.currentSession.stacks
+      if (typeof stacks === 'undefined') {
+        return []
+      }
+      stacks[0].isHighlight = true
+      for (let index = 0; index < stacks.length; ++index) {
+        let stack = stacks[index]
+        stack.threadSerial = index
+        let frames = stack.frames
+        for (let frame of frames) {
+          if (frame.imageName === this.currentSession.appImage) {
+            frame.isHighlight = true
+          }
+        }
+      }
+      return stacks
+    }
+  },
+  methods: {
+    ...mapActions('anr', ['getSessionDetail']),
+    goNext (isPrev) {
+      if ((isPrev && this.hasPrev) || (!isPrev && this.hasNext)) {
+        let nextIdx = isPrev ? this.currentSession.idx - 1 : this.currentSession.idx + 1
+        let nextId = this.issueDetail.sessions[nextIdx]
+        this.$router.push(`/anr/issue_detail/${this.$route.params.iid}/session/${nextId}`)
+      }
+    }
+  },
+  beforeMount () {
+    this.getSessionDetail({iid: this.$route.params.iid, sid: this.$route.params.sid})
+  },
+  beforeRouteUpdate (to, from, next) {
+    if (to.name === from.name) { // 手动刷新数据
+      this.getSessionDetail({iid: to.params.iid, sid: to.params.sid})
+    }
+    next()
+  }
+}
+</script>
+
+<style scoped lang="scss">
+    .listcontaner {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        padding: 0 25px;
+
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        max-width: 1500px;
+        min-width: 850px;
+        .navi {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 80px;
+            color: rgb(5, 5, 5);
+            background: rgb(245, 247, 249);
+            margin: 0 -25px 0 -25px;
+            padding: 0 25px 0 25px;
+            border-bottom: 1px solid rgb(225, 229, 232);
+            .navi-bar {
+                display: flex;
+                flex-direction: row;
+                padding-bottom: 3px;
+                align-items: center;
+                font-size: 1.4em;
+            }
+        }
+        .stack-header {
+            font-size: 16px;
+            margin: 15px 0 15px 0;
+            color: rgb(5, 5, 5);
+        }
+        .stack-frames {
+            margin-bottom: 20px;
+            &:last-child {
+                margin-bottom: 40px;
+            }
+        }
+    }
+</style>
