@@ -70,11 +70,13 @@ export default {
       for (let index = 0; index < stacks.length; ++index) {
         let stack = stacks[index]
         stack.threadSerial = index
-        stack.topFrameSymbol = stack.frames && stack.frames[0] && stack.frames[0].symbol
+        stack.topFrameSymbol = stack && stack.frames && stack.frames[0] && stack.frames[0].symbol
         let frames = stack.frames
-        for (let frame of frames) {
-          if (frame.imageName === this.currentSession.appImage) {
-            frame.isHighlight = true
+        if (frames) {
+          for (let frame of frames) {
+            if (frame.imageName === this.currentSession.appImage) {
+              frame.isHighlight = true
+            }
           }
         }
       }
