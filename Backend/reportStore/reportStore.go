@@ -156,7 +156,7 @@ func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 
 	mainStack := s.Backtrace.Stacks[0]
 	for _, frame := range  mainStack.Frames {
-		if frame.ImageName == s.Backtrace.AppImageName && frame.RetSymbol != "main" {
+		if frame.ImageName == s.Backtrace.AppImageName && !strings.HasPrefix(frame.RetSymbol,"main main.") {
 			*identifier = frame.RetSymbol
 			splits := strings.Split(frame.RetSymbol, " ")
 			if len(splits) > 1 {
@@ -217,18 +217,20 @@ func GetAllReports() *[]AnrReport {
 	return &results
 }
 
-func GetAllIssues() *[]Issue {
+func GetAllIssues(start int, pageSize int) (int, *[]Issue) {
 	session := getSession()
 	defer session.Close()
 
 	var results []Issue
 
 	c := session.DB(dataBase).C(issueCollection)
-	err := c.Find(nil).All(&results)
+	err := c.Find(nil).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
+	count, err :=  c.Find(nil).Count()
 	if err != nil {
 		fmt.Println(err)
 	}
-	return &results
+
+	return count, &results
 }
 
 func GetReportsOfIssue(issueId string) *[]string {
@@ -238,7 +240,7 @@ func GetReportsOfIssue(issueId string) *[]string {
 	var results []Issue
 
 	c := session.DB(dataBase).C(reportCollection)
-	err := c.Find(bson.M{"issue": bson.ObjectIdHex(issueId)}).All(&results)
+	err := c.Find(bson.M{"issue": bson.ObjectIdHex(issueId)}).Sort("-timestamp").All(&results)
 	if err != nil {
 		fmt.Println(err)
 	}

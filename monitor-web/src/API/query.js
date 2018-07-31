@@ -5,8 +5,8 @@ let axiosInstance = axios.create({
   baseURL: config.baseURL
 })
 
-let getAllIssues = () => {
-  return axiosInstance.get('/query_issues')
+let getAllIssues = (start, pageSize) => {
+  return axiosInstance.get(`/query_issues?start=${start}&pageSize=${pageSize}`)
 }
 
 let getIssueDetails = (id) => {

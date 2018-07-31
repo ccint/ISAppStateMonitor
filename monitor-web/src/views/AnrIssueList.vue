@@ -1,30 +1,55 @@
 <template>
     <div class="listcontaner">
         <div class="issueList">
-            <IssueCell :info="issue" v-for="(issue, idx) in issues" :key="issue.id" @click="gotoIssueDetail(idx)">
+            <div class="header">
+                <div class="header-title">
+                    TOTAL ISSUES
+                </div>
+                <div class="issue-num">
+                    {{totalIssues || 0}}
+                </div>
+            </div>
+            <IssueCell :info="issue"
+                       v-for="(issue, idx) in issues"
+                       :key="issue.id"
+                       @click="gotoIssueDetail(idx)">
             </IssueCell>
         </div>
+        <Page class="page-control"
+              :current="currentPage"
+              :total="totalIssues"
+              :pageSize="pageSize"
+              @on-change="onPageChange"
+              show-elevator />
     </div>
 </template>
 
 <script>
 // @ is an alias to /src
 import IssueCell from '../components/IssueCell'
-import { mapState, mapActions } from 'vuex'
+import { mapState, mapActions, mapMutations } from 'vuex'
 
 export default {
   name: 'anrIssueList',
   components: {
     IssueCell
   },
+  data () {
+    return {
+      pageSize: 20
+    }
+  },
   computed: {
     ...mapState('anr', {
-      issues: state => state.issueList,
-      issueDetail: state => state.issueDetail
+      issues: state => state.issueList.issues,
+      issueDetail: state => state.issueDetail,
+      currentPage: state => state.currentIssuePage,
+      totalIssues: state => state.issueList.total
     })
   },
   methods: {
     ...mapActions('anr', ['getIssueList', 'getIssueDetail']),
+    ...mapMutations('anr', ['setCurrentIssuePage']),
     gotoIssueDetail (idx) {
       let issue = this.issues[idx]
       let id = issue.id
@@ -32,10 +57,19 @@ export default {
         let sid = this.issueDetail.sessions[0]
         this.$router.push(`/anr/issue_detail/${id}/session/${sid}`)
       })
+    },
+    onPageChange (page) {
+      this.setCurrentIssuePage(page)
+      this.loadIssues()
+    },
+    loadIssues () {
+      let start = (this.currentPage - 1) * this.pageSize
+      let pageSize = this.pageSize
+      this.getIssueList({start, pageSize})
     }
   },
   beforeMount () {
-    this.getIssueList()
+    this.loadIssues()
   }
 }
 </script>
@@ -52,5 +86,28 @@ export default {
         overflow: hidden;
         max-width: 1500px;
         min-width: 850px;
+        .page-control {
+            margin: 15px;
+        }
+        .header {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: row;
+            align-items: center;
+            padding: 15px;
+            height: 65px;
+            background: rgb(215, 226, 233);
+            .header-title {
+                color: rgb(102, 117, 127);
+                font-weight: 500;
+            }
+            .issue-num {
+                margin: -6px 15px 0 10px;
+                color: rgb(12, 46, 69);
+                font-weight: 400;
+                font-size: 23px;
+                letter-spacing: 0.5px
+            }
+        }
     }
 </style>

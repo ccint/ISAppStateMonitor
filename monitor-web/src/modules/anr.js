@@ -2,23 +2,24 @@ import {getAllIssues, getIssueSession, getIssueDetails} from '../API/query'
 
 const state = () => {
   return {
-    issueList: [],
+    issueList: {total: 0, issues: []},
+    currentIssuePage: 1,
     issueDetail: {id: '', sessions: []},
     currentSession: {idx: -1, id: ''}
   }
 }
 
 const actions = {
-  async getIssueList ({ commit }) {
-    let result = await getAllIssues()
-    commit('setIssueList', result.data)
+  async getIssueList ({ commit }, {start, pageSize}) {
+    let result = await getAllIssues(start, pageSize)
+    commit('setIssueList', {total: result.data.total || 0, issues: result.data.issues || []})
   },
   async getIssueDetail ({ commit, state }, {id}) {
     if (id !== state.issueDetail.id) {
       commit('setIssueDetail', {id: '', sessions: []})
       let result = await getIssueDetails(id)
       let sessions = result.data.sessions
-      commit('setIssueDetail', {id, sessions})
+      commit('setIssueDetail', {id, sessions: sessions || []})
     }
   },
   async getSessionDetail ({ dispatch, commit, state }, {iid, sid}) {
@@ -41,6 +42,9 @@ const mutations = {
   setCurrentSession (state, data) {
     let idx = state.issueDetail.sessions.indexOf(data.sid)
     state.currentSession = {idx, ...data}
+  },
+  setCurrentIssuePage (state, data) {
+    state.currentIssuePage = data
   }
 }
 

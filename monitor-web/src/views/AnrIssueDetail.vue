@@ -2,14 +2,25 @@
     <div class="listcontaner">
         <div class="navi">
             <div class="navi-bar">
-                <font-awesome-icon size="2x" icon="caret-left" :style="{ color: hasNext ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}" @click="goNext(false)"/>
+                <font-awesome-icon size="2x"
+                                   icon="caret-left"
+                                   :style="{ color: hasNext ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}"
+                                   @click="goNext(false)"
+                />
                 <div style="margin: 0 15px 0 15px;">
                     {{sessionDate}}
                 </div>
-                <font-awesome-icon size="2x" icon="caret-right" :style="{ color: hasPrev ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}" @click="goNext(true)"/>
+                <font-awesome-icon size="2x"
+                                   icon="caret-right"
+                                   :style="{ color: hasPrev ? 'rgb(85, 172, 238)' : 'rgb(222, 228, 232)'}"
+                                   @click="goNext(true)"
+                />
             </div>
             <div style="font-style: italic">
                 {{`App Version ${currentSession.appVersion}`}}
+            </div>
+            <div style="font-style: italic">
+                {{`Runloop duration: ${Math.round(currentSession.duration * 100) / 100} ms `}}
             </div>
         </div>
         <div class="stack-header">
@@ -54,6 +65,7 @@ export default {
       for (let index = 0; index < stacks.length; ++index) {
         let stack = stacks[index]
         stack.threadSerial = index
+        stack.topFrameSymbol = stack.frames && stack.frames[0] && stack.frames[0].symbol
         let frames = stack.frames
         for (let frame of frames) {
           if (frame.imageName === this.currentSession.appImage) {
@@ -102,7 +114,7 @@ export default {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            height: 80px;
+            height: 95px;
             color: rgb(5, 5, 5);
             background: rgb(245, 247, 249);
             margin: 0 -25px 0 -25px;

@@ -1,11 +1,11 @@
 <template>
-    <div class="content" @click="clicked">
-        <div class="header">
-            <div class="serial font-standard" :style="style(info.isHighlight, true)">
+    <div class="content">
+        <div class="header" @click="clicked">
+            <div class="serial font-standard" :style="style(info.isHighlight, true, true)">
                 {{`#${info.threadSerial}`}}
             </div>
-            <div class="thread-name font-standard" :style="style(info.isHighlight, true)">
-                {{`Thread: ${info.threadName}`}}
+            <div class="thread-name font-standard" :style="style(info.isHighlight, true, true)">
+                {{`${info.threadName}`}}
             </div>
             <div class="top-frame font-standard ellipsis" v-if="!showFrames">
                 {{info.topFrameSymbol || "missing"}}
@@ -53,8 +53,11 @@ export default {
     clicked () {
       this.expand = !this.expand
     },
-    style (isHighlight, strongHighlight) {
-      return {color: `${isHighlight ? '#008bf3' : '#5a5a5a'}`, fontWeight: strongHighlight && isHighlight ? 700 : 400}
+    style (isHighlight, strongHighlight, strong) {
+      return {
+        color: `${isHighlight ? '#008bf3' : '#5a5a5a'}`,
+        fontWeight: (strongHighlight && isHighlight) || strong ? 700 : 400
+      }
     }
   },
   created () {
@@ -67,7 +70,7 @@ export default {
     .content {
         display: flex;
         flex-direction: column;
-        border: 1px solid rgb(218, 223, 226);
+        border: 1px solid #e1e5e8;
         border-radius: 5px;
         overflow: hidden;
         .header {
@@ -76,7 +79,8 @@ export default {
             flex-direction: row;
             align-items: center;
             padding: 15px;
-            background: #eef7fd;
+            height: 65px;
+            background: #f5f7f9;
             cursor: pointer;
             .thread-name {
                 margin-right: 30px;
@@ -98,7 +102,7 @@ export default {
                 flex-direction: row;
                 align-items: center;
                 position: relative;
-                border-top: 1px solid rgb(218, 223, 226);
+                border-top: 1px solid #e1e5e8;
                 .image-name {
                     margin-left: 5px;
                     width: 150px;

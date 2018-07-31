@@ -44,18 +44,10 @@ export default {
         background: white;
         cursor: pointer;
         transition: background ease 0.5s;
+        border-bottom: 1px solid rgb(224, 229, 232);
         &:hover {
             background: #eef7fd;
         }
-        &:after {
-             content: ' ';
-             position: absolute;
-             height: 1px;
-             background: rgb(224, 229, 232);
-             right: 0;
-             left: 0;
-             top: 0;
-         }
     }
     .text {
         display: flex;
@@ -89,15 +81,7 @@ export default {
         font-weight: 500;
         width: 300px;
         flex: 0 0 auto;
-        &:after {
-            content: ' ';
-            position: absolute;
-            width: 1px;
-            background: rgb(224, 229, 232);
-            right: 0;
-            top: 0;
-            bottom: 0;
-        }
+        border-right: 1px solid rgb(224, 229, 232);
     }
     .count {
         width: 150px;
@@ -105,16 +89,7 @@ export default {
     }
     .issue {
         flex: 1 1 auto;
-        position: relative;
-        &:after {
-            content: ' ';
-            position: absolute;
-            width: 1px;
-            background: rgb(224, 229, 232);
-            right: 0;
-            top: 0;
-            bottom: 0;
-        }
+        border-right: 1px solid rgb(224, 229, 232);
     }
 
 </style>
