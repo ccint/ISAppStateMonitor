@@ -39,7 +39,6 @@ export default {
 <style scoped lang="scss">
     .content {
         display: flex;
-        position: relative;
         flex-direction: row;
         background: white;
         cursor: pointer;
@@ -73,7 +72,6 @@ export default {
     }
     .version {
         display: flex;
-        position: relative;
         justify-content: center;
         align-items: center;
         padding: 15px;
@@ -89,6 +87,7 @@ export default {
     }
     .issue {
         flex: 1 1 auto;
+        flex-shrink: 1;
         border-right: 1px solid rgb(224, 229, 232);
     }
 

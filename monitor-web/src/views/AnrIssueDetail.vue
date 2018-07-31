@@ -26,7 +26,11 @@
         <div class="stack-header">
             Stacktrace
         </div>
-        <stack-cell class="stack-frames" :info="stack" v-for="(stack, idx) in stacks" :key="idx">
+        <stack-cell class="stack-frames"
+                    v-for="(stack, idx) in stacks"
+                    :key="idx"
+                    :expandDefault="stack.expandDefault"
+                    :info="stack" >
         </stack-cell>
     </div>
 </template>
@@ -62,6 +66,7 @@ export default {
         return []
       }
       stacks[0].isHighlight = true
+      stacks[0].expandDefault = true
       for (let index = 0; index < stacks.length; ++index) {
         let stack = stacks[index]
         stack.threadSerial = index

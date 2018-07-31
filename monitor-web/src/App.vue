@@ -13,17 +13,26 @@
                 </div>
             </div>
             <div class="menu">
-                <div class="menu-item" @click="anrClicked">
+                <div class="menu-item">
                     <font-awesome-icon icon="spinner" class="muen-item-icon"/>
                     <span class="menu-item-text">Anr Issues</span>
                 </div>
             </div>
         </Sider>
         <div class="right-content">
-            <Breadcrumb :style="{margin: '30px 0', color: 'color: white'}">
-                <BreadcrumbItem v-if="showAnrNavi" style="font-size: 20px; color: white" to="/anr">Anr Issues</BreadcrumbItem>
-                <BreadcrumbItem v-if="showIssueDetailNavi" style="font-size: 20px; color: white">Issue Details</BreadcrumbItem>
-            </Breadcrumb>
+            <div class="app-navi">
+                <div class="app-navi-item"
+                     v-for="(navi, idx) in navis"
+                     :key="idx"
+                     @click="naviClicked(idx)"
+                >
+                    {{navi.name}}
+                    <font-awesome-icon icon="angle-right"
+                                       style="margin: 2px 10px 0 10px; color: rgb(168, 181, 191); font-size: 15px"
+                                       v-if="idx < navis.length - 1"
+                    />
+                </div>
+            </div>
             <router-view/>
         </div>
     </div>
@@ -32,21 +41,43 @@
 <script>
 export default {
   name: 'app',
+  data () {
+    return {
+      navis: []
+    }
+  },
+  watch: {
+    routePath (newValue) {
+      this.updateNavis(newValue)
+    }
+  },
   computed: {
-    showAnrNavi () {
-      return this.$route.path.endsWith('anr') || this.$route.path.includes('issue_detail')
-    },
-    showIssueDetailNavi () {
-      return this.$route.path.includes('issue_detail')
+    routePath () {
+      return this.$route.path
     }
   },
   methods: {
-    anrClicked () {
-      this.$router.push('/anr')
+    naviClicked (idx) {
+      let navi = this.navis[idx]
+      let path = navi.to
+      if (typeof path !== 'undefined') {
+        this.$router.push(path)
+      }
+    },
+    updateNavis (path) {
+      if (path.includes('/anr/issue_detail/') && path.includes('session')) {
+        this.navis = [{to: '/anr', name: 'Anr Issues'}, {name: 'Issue Details'}]
+      } else {
+        this.navis = [{to: '/anr', name: 'Anr Issues'}]
+      }
     }
   },
   beforeMount () {
-    this.anrClicked()
+    let path = this.$route.path
+    this.updateNavis(path)
+    if (path === '/' || path === '') {
+      this.naviClicked(0) // 默认项 之后会改造
+    }
   }
 }
 </script>
@@ -105,6 +136,30 @@ export default {
             padding: 0 30px 30px 30px;
             margin-left: 200px;
             overflow: scroll;
+            .app-navi {
+                display: flex;
+                align-items: center;
+                margin: 30px 0;
+                font-size: 20px;
+                font-weight: 400;
+                .app-navi-item {
+                    color: rgb(168, 181, 191);
+                    transition: color .2s ease-in-out;
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    &:hover {
+                        color: #55acee;
+                    }
+                    &:last-child {
+                        color: rgb(245, 248, 250);
+                        cursor: default;
+                    }
+                    &:last-child:hover {
+                        color: rgb(245, 248, 250);
+                    }
+                }
+            }
         }
     }
     .menu {
@@ -120,8 +175,6 @@ export default {
             align-items: center;
             height: 35px;
             color: rgb(234, 245, 252);
-            .menu-item-text {
-            }
             .muen-item-icon {
                 margin: 0 15px 0 30px;
             }
