@@ -225,7 +225,7 @@ func GetAllIssues(start int, pageSize int) (int, *[]Issue) {
 
 	c := session.DB(dataBase).C(issueCollection)
 	err := c.Find(nil).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
-	count, err :=  c.Find(nil).Count()
+	count, err :=  c.Count()
 	if err != nil {
 		fmt.Println(err)
 	}

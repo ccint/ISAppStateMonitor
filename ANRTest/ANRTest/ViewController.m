@@ -17,15 +17,15 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    [self test];
+    [self testInAnotherOne];
 }
 
-- (void)test {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        double now = CACurrentMediaTime();
-        while ((CACurrentMediaTime() - now) * 1000 < 1002) {
-        }
-        [self test];
+- (void)testInAnotherOne {
+    double now = CACurrentMediaTime();
+    while ((CACurrentMediaTime() - now) * 1000 < 1002) {
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self testInAnotherOne];
     });
 }
 

@@ -7,7 +7,6 @@
 //
 
 #import "AppDelegate.h"
-#import "ISMonitorCenter.h"
 #import "ISANRWatcher.h"
 
 @interface AppDelegate ()
@@ -16,14 +15,12 @@
 
 @implementation AppDelegate
 
-
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
-    [ISMonitorCenter setLogBaseInfoWithAppVersion:@"7.45.0.20180511"
+    [ISANRWatcher setLogBaseInfoWithAppVersion:@"7.45.0.20180511"
                                             appId:@"ANRTest"
                                   binaryImageName:@"ANRTest"
                                        deviceUUID:[[UIDevice currentDevice].identifierForVendor UUIDString]];
-    [ISANRWatcher startWatch];
+    [ISANRWatcher startWatch:1000];
     return YES;
 }
 

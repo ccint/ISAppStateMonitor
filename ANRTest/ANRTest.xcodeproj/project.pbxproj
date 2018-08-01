@@ -7,14 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		12F9F76820A4276B00ABD788 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76720A4276B00ABD788 /* AppDelegate.m */; };
+		12695A112111889E00FC783B /* ISStacktraceRecorder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12695A0F2111889E00FC783B /* ISStacktraceRecorder.cpp */; };
+		12695A172111B8AE00FC783B /* ISANRWatcher.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12695A162111B8AE00FC783B /* ISANRWatcher.mm */; };
+		12F9F76820A4276B00ABD788 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76720A4276B00ABD788 /* AppDelegate.mm */; };
 		12F9F76B20A4276B00ABD788 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76A20A4276B00ABD788 /* ViewController.m */; };
 		12F9F76E20A4276B00ABD788 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 12F9F76C20A4276B00ABD788 /* Main.storyboard */; };
 		12F9F77020A4276B00ABD788 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 12F9F76F20A4276B00ABD788 /* Assets.xcassets */; };
 		12F9F77320A4276B00ABD788 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 12F9F77120A4276B00ABD788 /* LaunchScreen.storyboard */; };
 		12F9F77620A4276B00ABD788 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F77520A4276B00ABD788 /* main.m */; };
-		12F9F78720A4279100ABD788 /* ISANRWatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F77D20A4279100ABD788 /* ISANRWatcher.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		12F9F78820A4279100ABD788 /* ISCallStackLogger.c in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F78220A4279100ABD788 /* ISCallStackLogger.c */; };
+		12F9F78720A4279100ABD788 /* ISMainThreadChecker.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F77D20A4279100ABD788 /* ISMainThreadChecker.mm */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		12F9F78920A4279100ABD788 /* ISBinaryImageHelper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F78320A4279100ABD788 /* ISBinaryImageHelper.mm */; };
 		12F9F78A20A4279100ABD788 /* ISSerialization.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F78420A4279100ABD788 /* ISSerialization.mm */; };
 		12F9F78B20A4279100ABD788 /* ISMonitorCenter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F78520A4279100ABD788 /* ISMonitorCenter.mm */; };
@@ -22,9 +23,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		12695A0F2111889E00FC783B /* ISStacktraceRecorder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ISStacktraceRecorder.cpp; sourceTree = "<group>"; };
+		12695A102111889E00FC783B /* ISStacktraceRecorder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ISStacktraceRecorder.hpp; sourceTree = "<group>"; };
+		12695A152111B8AE00FC783B /* ISANRWatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ISANRWatcher.h; sourceTree = "<group>"; };
+		12695A162111B8AE00FC783B /* ISANRWatcher.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ISANRWatcher.mm; sourceTree = "<group>"; };
 		12F9F76320A4276B00ABD788 /* ANRTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANRTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12F9F76620A4276B00ABD788 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		12F9F76720A4276B00ABD788 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		12F9F76720A4276B00ABD788 /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		12F9F76920A4276B00ABD788 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		12F9F76A20A4276B00ABD788 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		12F9F76D20A4276B00ABD788 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -32,12 +37,10 @@
 		12F9F77220A4276B00ABD788 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		12F9F77420A4276B00ABD788 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		12F9F77520A4276B00ABD788 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		12F9F77D20A4279100ABD788 /* ISANRWatcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ISANRWatcher.m; sourceTree = "<group>"; };
+		12F9F77D20A4279100ABD788 /* ISMainThreadChecker.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISMainThreadChecker.mm; sourceTree = "<group>"; };
 		12F9F77E20A4279100ABD788 /* ISBinaryImageHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISBinaryImageHelper.h; sourceTree = "<group>"; };
-		12F9F77F20A4279100ABD788 /* ISANRWatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISANRWatcher.h; sourceTree = "<group>"; };
-		12F9F78020A4279100ABD788 /* ISCallStackLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISCallStackLogger.h; sourceTree = "<group>"; };
+		12F9F77F20A4279100ABD788 /* ISMainThreadChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISMainThreadChecker.h; sourceTree = "<group>"; };
 		12F9F78120A4279100ABD788 /* ISMonitorCenter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISMonitorCenter.h; sourceTree = "<group>"; };
-		12F9F78220A4279100ABD788 /* ISCallStackLogger.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ISCallStackLogger.c; sourceTree = "<group>"; };
 		12F9F78320A4279100ABD788 /* ISBinaryImageHelper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISBinaryImageHelper.mm; sourceTree = "<group>"; };
 		12F9F78420A4279100ABD788 /* ISSerialization.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISSerialization.mm; sourceTree = "<group>"; };
 		12F9F78520A4279100ABD788 /* ISMonitorCenter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISMonitorCenter.mm; sourceTree = "<group>"; };
@@ -82,7 +85,7 @@
 			children = (
 				12F9F77C20A4277A00ABD788 /* ANR */,
 				12F9F76620A4276B00ABD788 /* AppDelegate.h */,
-				12F9F76720A4276B00ABD788 /* AppDelegate.m */,
+				12F9F76720A4276B00ABD788 /* AppDelegate.mm */,
 				12F9F76920A4276B00ABD788 /* ViewController.h */,
 				12F9F76A20A4276B00ABD788 /* ViewController.m */,
 				12F9F76C20A4276B00ABD788 /* Main.storyboard */,
@@ -97,16 +100,18 @@
 		12F9F77C20A4277A00ABD788 /* ANR */ = {
 			isa = PBXGroup;
 			children = (
-				12F9F77F20A4279100ABD788 /* ISANRWatcher.h */,
-				12F9F77D20A4279100ABD788 /* ISANRWatcher.m */,
+				12F9F77F20A4279100ABD788 /* ISMainThreadChecker.h */,
+				12F9F77D20A4279100ABD788 /* ISMainThreadChecker.mm */,
 				12F9F78320A4279100ABD788 /* ISBinaryImageHelper.mm */,
 				12F9F77E20A4279100ABD788 /* ISBinaryImageHelper.h */,
-				12F9F78220A4279100ABD788 /* ISCallStackLogger.c */,
-				12F9F78020A4279100ABD788 /* ISCallStackLogger.h */,
 				12F9F78120A4279100ABD788 /* ISMonitorCenter.h */,
 				12F9F78520A4279100ABD788 /* ISMonitorCenter.mm */,
 				12F9F78620A4279100ABD788 /* ISSerialization.h */,
 				12F9F78420A4279100ABD788 /* ISSerialization.mm */,
+				12695A0F2111889E00FC783B /* ISStacktraceRecorder.cpp */,
+				12695A102111889E00FC783B /* ISStacktraceRecorder.hpp */,
+				12695A152111B8AE00FC783B /* ISANRWatcher.h */,
+				12695A162111B8AE00FC783B /* ISANRWatcher.mm */,
 			);
 			path = ANR;
 			sourceTree = "<group>";
@@ -267,13 +272,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12695A172111B8AE00FC783B /* ISANRWatcher.mm in Sources */,
 				12F9F78920A4279100ABD788 /* ISBinaryImageHelper.mm in Sources */,
-				12F9F78720A4279100ABD788 /* ISANRWatcher.m in Sources */,
+				12F9F78720A4279100ABD788 /* ISMainThreadChecker.mm in Sources */,
 				12F9F76B20A4276B00ABD788 /* ViewController.m in Sources */,
 				12F9F78A20A4279100ABD788 /* ISSerialization.mm in Sources */,
-				12F9F78820A4279100ABD788 /* ISCallStackLogger.c in Sources */,
+				12695A112111889E00FC783B /* ISStacktraceRecorder.cpp in Sources */,
 				12F9F77620A4276B00ABD788 /* main.m in Sources */,
-				12F9F76820A4276B00ABD788 /* AppDelegate.m in Sources */,
+				12F9F76820A4276B00ABD788 /* AppDelegate.mm in Sources */,
 				12F9F78B20A4279100ABD788 /* ISMonitorCenter.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

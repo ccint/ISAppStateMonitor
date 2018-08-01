@@ -1,9 +1,9 @@
 //
-//  ISBinaryImageHelper.c
+//  ISBinaryImageHelper.mm
 //  Sample
 //
 //  Created by 舒彪 on 2018/4/30.
-//  Copyright © 2018年 Facebook. All rights reserved.
+//  Copyright © 2018年 intsig. All rights reserved.
 //
 
 #include "ISBinaryImageHelper.h"

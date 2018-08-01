@@ -1,13 +1,18 @@
 //
 //  ISANRWatcher.h
-//  MainThreadWatcher
+//  ANRTest
 //
-//  Created by 舒彪 on 2018/1/15.
-//  Copyright © 2018年 舒彪. All rights reserved.
+//  Created by Brent Shu on 2018/8/1.
+//  Copyright © 2018年 intsig. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
 
 @interface ISANRWatcher : NSObject
-+ (void)startWatch;
++ (void)setLogBaseInfoWithAppVersion:(NSString *)appVersion
+                               appId:(NSString *)appId
+                     binaryImageName:(NSString *)binaryImageName
+                          deviceUUID:(NSString *)deviceUUID;
++ (void)startWatch:(uint64_t)runloopThreshold;
++ (void)stopWatch;
 @end

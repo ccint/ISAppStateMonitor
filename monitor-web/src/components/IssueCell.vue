@@ -5,7 +5,7 @@
                 {{info.title}}
             </div>
             <div class="detail ellipsis">
-                {{info.detail}}
+                {{info.detail || 'missing'}}
             </div>
         </div>
         <div class="version ellipsis">
