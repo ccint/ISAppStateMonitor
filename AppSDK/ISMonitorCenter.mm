@@ -7,12 +7,12 @@
 //
 
 #import "ISMonitorCenter.h"
-#import <Objective-LevelDB/LevelDB.h>
+#import "ISLevelDB.h"
 #import "ISSerialization.h"
 #include "ISBinaryImageHelper.h"
 
 @interface ISMonitorCenter() <NSURLSessionDelegate>
-@property (nonatomic, strong) LevelDB *logDB;
+@property (nonatomic, strong) ISLevelDB *logDB;
 @property (nonatomic, strong) dispatch_queue_t logQueue;
 @property (nonatomic, strong) NSString *deviceUUID;
 @property (nonatomic, strong) NSString *appId;
@@ -87,7 +87,7 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                                                                     NSUserDomainMask,
                                                                     YES).firstObject;
         sharedInstance.logQueue = dispatch_queue_create("ISMonitorLogQueue", NULL);
-        sharedInstance.logDB = [[LevelDB alloc] initWithPath:[libraryPath
+        sharedInstance.logDB = [[ISLevelDB alloc] initWithPath:[libraryPath
                                                               stringByAppendingPathComponent:@"ISMonitorLog"]
                                                      andName:@"ISMonitorLog"];
         NSOperationQueue *sessionQueue = [[NSOperationQueue alloc] init];
@@ -146,7 +146,7 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                                           startingAtKey:nil
                                     filteredByPredicate:nil
                                               andPrefix:@"mt_out_"
-                                             usingBlock:^(LevelDBKey *key, id value, BOOL *stop) {
+                                             usingBlock:^(ISLevelDBKey *key, id value, BOOL *stop) {
                                                  if (value) {
                                                      [mainThreadTimeoutLogs addObject:value];
                                                  }

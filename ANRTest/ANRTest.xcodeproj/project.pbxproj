@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		12695A112111889E00FC783B /* ISStacktraceRecorder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12695A0F2111889E00FC783B /* ISStacktraceRecorder.cpp */; };
 		12695A172111B8AE00FC783B /* ISANRWatcher.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12695A162111B8AE00FC783B /* ISANRWatcher.mm */; };
+		12695A1B2111CB7500FC783B /* ISLevelDB.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12695A192111CB7400FC783B /* ISLevelDB.mm */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		12F9F76820A4276B00ABD788 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76720A4276B00ABD788 /* AppDelegate.mm */; };
 		12F9F76B20A4276B00ABD788 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76A20A4276B00ABD788 /* ViewController.m */; };
 		12F9F76E20A4276B00ABD788 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 12F9F76C20A4276B00ABD788 /* Main.storyboard */; };
@@ -27,6 +28,9 @@
 		12695A102111889E00FC783B /* ISStacktraceRecorder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ISStacktraceRecorder.hpp; sourceTree = "<group>"; };
 		12695A152111B8AE00FC783B /* ISANRWatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ISANRWatcher.h; sourceTree = "<group>"; };
 		12695A162111B8AE00FC783B /* ISANRWatcher.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ISANRWatcher.mm; sourceTree = "<group>"; };
+		12695A192111CB7400FC783B /* ISLevelDB.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISLevelDB.mm; sourceTree = "<group>"; };
+		12695A1A2111CB7400FC783B /* ISLevelDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISLevelDB.h; sourceTree = "<group>"; };
+		1271E4AC2111D38B00ECDB67 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		12F9F76320A4276B00ABD788 /* ANRTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANRTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12F9F76620A4276B00ABD788 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		12F9F76720A4276B00ABD788 /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
@@ -62,6 +66,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		12695A182111CB1100FC783B /* LevelDBWarpper */ = {
+			isa = PBXGroup;
+			children = (
+				1271E4AC2111D38B00ECDB67 /* Common.h */,
+				12695A1A2111CB7400FC783B /* ISLevelDB.h */,
+				12695A192111CB7400FC783B /* ISLevelDB.mm */,
+			);
+			path = LevelDBWarpper;
+			sourceTree = "<group>";
+		};
 		12F9F75A20A4276B00ABD788 = {
 			isa = PBXGroup;
 			children = (
@@ -100,6 +114,7 @@
 		12F9F77C20A4277A00ABD788 /* ANR */ = {
 			isa = PBXGroup;
 			children = (
+				12695A182111CB1100FC783B /* LevelDBWarpper */,
 				12F9F77F20A4279100ABD788 /* ISMainThreadChecker.h */,
 				12F9F77D20A4279100ABD788 /* ISMainThreadChecker.mm */,
 				12F9F78320A4279100ABD788 /* ISBinaryImageHelper.mm */,
@@ -272,6 +287,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12695A1B2111CB7500FC783B /* ISLevelDB.mm in Sources */,
 				12695A172111B8AE00FC783B /* ISANRWatcher.mm in Sources */,
 				12F9F78920A4279100ABD788 /* ISBinaryImageHelper.mm in Sources */,
 				12F9F78720A4279100ABD788 /* ISMainThreadChecker.mm in Sources */,

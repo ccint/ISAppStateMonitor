@@ -20,6 +20,7 @@
                                   binaryImageName:binaryImageName
                                        deviceUUID:deviceUUID];
 }
+
 + (void)startWatch:(uint64_t)runloopThreshold {
     ISMainThreadChecker::startWatch(runloopThreshold);
 }

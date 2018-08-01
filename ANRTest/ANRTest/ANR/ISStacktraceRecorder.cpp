@@ -72,22 +72,6 @@ namespace ISBSRecorder {
         const uintptr_t return_address;
     };
     
-    bool fillThreadStateIntoMachineContext(thread_t thread, _STRUCT_MCONTEXT *machineContext);
-    
-    uintptr_t mach_framePointer(mcontext_t const machineContext);
-    
-    uintptr_t mach_stackPointer(mcontext_t const machineContext);
-    
-    uintptr_t mach_instructionAddress(mcontext_t const machineContext);
-    
-    uintptr_t mach_linkRegister(mcontext_t const machineContext);
-    
-    kern_return_t mach_copyMem(const void *const src, void *const dst, const size_t numBytes);
-    
-    bool getQueueName(const thread_t thread, char* const buffer, int bufLength);
-    
-    bool getThreadName(const thread_t thread, char* const buffer, int bufLength);
-    
 #pragma -mark HandleMachineContext
     bool fillThreadStateIntoMachineContext(thread_t thread, _STRUCT_MCONTEXT *machineContext) {
         mach_msg_type_number_t state_count = BS_THREAD_STATE_COUNT;
