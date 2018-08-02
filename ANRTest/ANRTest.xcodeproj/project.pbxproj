@@ -10,6 +10,7 @@
 		12695A112111889E00FC783B /* ISStacktraceRecorder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12695A0F2111889E00FC783B /* ISStacktraceRecorder.cpp */; };
 		12695A172111B8AE00FC783B /* ISANRWatcher.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12695A162111B8AE00FC783B /* ISANRWatcher.mm */; };
 		12695A1B2111CB7500FC783B /* ISLevelDB.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12695A192111CB7400FC783B /* ISLevelDB.mm */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		12C715DB21129B4100D773F1 /* config.plist in Resources */ = {isa = PBXBuildFile; fileRef = 12C715DA21129B4100D773F1 /* config.plist */; };
 		12F9F76820A4276B00ABD788 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76720A4276B00ABD788 /* AppDelegate.mm */; };
 		12F9F76B20A4276B00ABD788 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12F9F76A20A4276B00ABD788 /* ViewController.m */; };
 		12F9F76E20A4276B00ABD788 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 12F9F76C20A4276B00ABD788 /* Main.storyboard */; };
@@ -31,6 +32,7 @@
 		12695A192111CB7400FC783B /* ISLevelDB.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ISLevelDB.mm; sourceTree = "<group>"; };
 		12695A1A2111CB7400FC783B /* ISLevelDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISLevelDB.h; sourceTree = "<group>"; };
 		1271E4AC2111D38B00ECDB67 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
+		12C715DA21129B4100D773F1 /* config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = config.plist; sourceTree = "<group>"; };
 		12F9F76320A4276B00ABD788 /* ANRTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANRTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		12F9F76620A4276B00ABD788 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		12F9F76720A4276B00ABD788 /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
@@ -127,6 +129,7 @@
 				12695A102111889E00FC783B /* ISStacktraceRecorder.hpp */,
 				12695A152111B8AE00FC783B /* ISANRWatcher.h */,
 				12695A162111B8AE00FC783B /* ISANRWatcher.mm */,
+				12C715DA21129B4100D773F1 /* config.plist */,
 			);
 			path = ANR;
 			sourceTree = "<group>";
@@ -210,6 +213,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12C715DB21129B4100D773F1 /* config.plist in Resources */,
 				12F9F77320A4276B00ABD788 /* LaunchScreen.storyboard in Resources */,
 				12F9F77020A4276B00ABD788 /* Assets.xcassets in Resources */,
 				12F9F76E20A4276B00ABD788 /* Main.storyboard in Resources */,

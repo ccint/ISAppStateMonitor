@@ -11,6 +11,8 @@
 #import "ISSerialization.h"
 #include "ISBinaryImageHelper.h"
 
+static NSString *defaultHost = @"https://192.168.16.140:4001";
+
 @interface ISMonitorCenter() <NSURLSessionDelegate>
 @property (nonatomic, strong) ISLevelDB *logDB;
 @property (nonatomic, strong) dispatch_queue_t logQueue;
@@ -20,6 +22,7 @@
 @property (nonatomic, strong) NSString *binaryImageName;
 @property (nonatomic, strong) NSURLSession *sharedURLSession;
 @property (nonatomic, strong) NSOperationQueue *sessionQueue;
+@property (nonatomic, strong) NSString *serverHost;
 @end
 
 @implementation ISMonitorCenter
@@ -83,6 +86,13 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[ISMonitorCenter alloc] init];
+        NSString *configPath = [[NSBundle mainBundle] pathForResource:@"config" ofType:@".plist"];
+        if([[NSFileManager defaultManager] fileExistsAtPath:configPath]) {
+            NSDictionary *configPlist = [[NSDictionary alloc] initWithContentsOfFile:configPath];
+            NSString *serverHost = configPlist[@"serverhost"];
+            sharedInstance.serverHost = serverHost.length ? serverHost : defaultHost;
+        }
+        
         NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
                                                                     NSUserDomainMask,
                                                                     YES).firstObject;
