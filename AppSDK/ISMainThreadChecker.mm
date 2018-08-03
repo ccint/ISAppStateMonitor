@@ -16,8 +16,8 @@
 
 namespace ISMainThreadChecker {
     
-    static const uint64_t MSEC_PER_SEC = 1000000ULL;
-    static const uint64_t NANOS_PER_MSEC = 1000000ULL;
+    static const uint64_t USEC_PER_MSEC = 1000ULL;
+    static const uint64_t NANOS_PER_USEC = 1000ULL;
     static Checker *checkerInstance;
     
 #pragma mark - Tools
@@ -44,78 +44,12 @@ namespace ISMainThreadChecker {
         }
     }
     
-    inline static thread_t thread_self() {
-        thread_t thread_self = mach_thread_self();
-        mach_port_deallocate(mach_task_self(), thread_self);
-        return thread_self;
-    }
-    
-    static void suspendOtherThreads() {
-        kern_return_t kr;
-        const task_t thisTask = mach_task_self();
-        const thread_t thisThread = (thread_t)thread_self();
-        thread_act_array_t threads;
-        mach_msg_type_number_t numThreads;
-        
-        if((kr = task_threads(thisTask, &threads, &numThreads)) != KERN_SUCCESS)
-        {
-            return;
-        }
-        
-        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
-        {
-            thread_t thread = threads[i];
-            if(thread != thisThread)
-            {
-                if((kr = thread_suspend(thread)) != KERN_SUCCESS)
-                {
-                }
-            }
-        }
-        
-        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
-        {
-            mach_port_deallocate(thisTask, threads[i]);
-        }
-        vm_deallocate(thisTask, (vm_address_t)threads, sizeof(thread_t) * numThreads);
-    }
-    
-    static void resumeOtherThreads() {
-        kern_return_t kr;
-        const task_t thisTask = mach_task_self();
-        const thread_t thisThread = (thread_t)thread_self();
-        thread_act_array_t threads;
-        mach_msg_type_number_t numThreads;
-        
-        if((kr = task_threads(thisTask, &threads, &numThreads)) != KERN_SUCCESS)
-        {
-            return;
-        }
-        
-        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
-        {
-            thread_t thread = threads[i];
-            if(thread != thisThread)
-            {
-                if((kr = thread_resume(thread)) != KERN_SUCCESS)
-                {
-                }
-            }
-        }
-        
-        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
-        {
-            mach_port_deallocate(thisTask, threads[i]);
-        }
-        vm_deallocate(thisTask, (vm_address_t)threads, sizeof(thread_t) * numThreads);
-    }
-    
     inline static uint64_t nanos_to_abs(uint64_t nanos, mach_timebase_info_data_t timebase_info) {
         return nanos * timebase_info.denom / timebase_info.numer;
     }
     
-    inline static void wait_until(uint64_t msec, mach_timebase_info_data_t timebase_info) {
-        uint64_t time_to_wait = nanos_to_abs(msec * NANOS_PER_MSEC, timebase_info);
+    inline static void wait_until(uint64_t usec, mach_timebase_info_data_t timebase_info) {
+        uint64_t time_to_wait = nanos_to_abs(usec * NANOS_PER_USEC, timebase_info);
         uint64_t now = mach_absolute_time();
         mach_wait_until(now + time_to_wait);
     }
@@ -143,21 +77,16 @@ namespace ISMainThreadChecker {
             dispatch_semaphore_wait(checker->loopSem, DISPATCH_TIME_FOREVER);
             auto result = checker->result;
             if (result) {
-                double semDuration = (CACurrentMediaTime() - result->runloopId) * MSEC_PER_SEC;
+                uint64_t semDuration = ((CACurrentMediaTime() - result->runloopId) * USEC_PER_SEC);
                 checker->isScheduing = true;
-                wait_until(checker->waitTime - semDuration, checker->timebase_info);
+                wait_until(checker->waitTime * USEC_PER_MSEC - semDuration, checker->timebase_info);
                 checker->isScheduing = false;
-                if (checker->isResetBySignal) {
-                    checker->isResetBySignal = false;
-                    continue;
-                }
                 auto resultAtMoment = checker->result;
                 if (resultAtMoment &&
                     result->runloopId == resultAtMoment->runloopId &&
+                    ((CACurrentMediaTime() - resultAtMoment->runloopId) * USEC_PER_SEC) >= checker->waitTime * USEC_PER_MSEC &&
                     resultAtMoment->stacks.size() == 0) {
-                    suspendOtherThreads();
                     ISBSRecorder::backtraceOfAllThread(resultAtMoment->stacks);
-                    resumeOtherThreads();
                 }
             }
         }
@@ -171,7 +100,8 @@ namespace ISMainThreadChecker {
         } else if (activity == kCFRunLoopBeforeWaiting) {
             auto result = checkerInstance->result;
             if (result && result->stacks.size() > 0) {
-                result->runloopDuration = (CACurrentMediaTime() - result->runloopId) * 1000;
+                count += 1;
+                printf("count %d\n", count);
                 [ISMonitorCenter logMainTreadTimeoutWithResult:result];
             }
             checkerInstance->finishSchedule();
@@ -194,7 +124,6 @@ namespace ISMainThreadChecker {
     ,loopSem(nullptr)
     ,currentRunloopId(0)
     ,isScheduing(false)
-    ,isResetBySignal(false)
     ,result(nullptr)
     ,wakeObserver(nullptr)
     ,sleepObserver(nullptr)
@@ -208,7 +137,6 @@ namespace ISMainThreadChecker {
     void Checker::beginSchedule() {
         this->result = CheckerResultPtr(new CheckerResult(CACurrentMediaTime()));
         if (this->isScheduing) {
-            this->isResetBySignal = YES;
             pthread_kill(this->thread, SIGALRM);
         }
         dispatch_semaphore_signal(this->loopSem);

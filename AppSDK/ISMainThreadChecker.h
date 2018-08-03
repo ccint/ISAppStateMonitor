@@ -12,6 +12,7 @@
 #include <memory>
 
 namespace ISMainThreadChecker {
+    static int count = 0;
     struct CheckerResult {
         double runloopId;
         double runloopDuration;
@@ -35,7 +36,6 @@ namespace ISMainThreadChecker {
         double currentRunloopId;
         uint64_t waitTime;
         bool isScheduing;
-        bool isResetBySignal;
         CheckerResultPtr result;
         CFRunLoopObserverRef wakeObserver;
         CFRunLoopObserverRef sleepObserver;

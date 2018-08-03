@@ -29,4 +29,8 @@
     ISMainThreadChecker::stopWatch();
 }
 
++ (int)logCount {
+    return ISMainThreadChecker::count;
+}
+
 @end

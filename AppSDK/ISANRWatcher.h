@@ -15,4 +15,5 @@
                           deviceUUID:(NSString *)deviceUUID;
 + (void)startWatch:(uint64_t)runloopThreshold;
 + (void)stopWatch;
++ (int)logCount;
 @end

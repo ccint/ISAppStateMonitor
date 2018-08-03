@@ -43,6 +43,9 @@ void initBinaryImagesInfo() {
     const uint32_t imageCount = _dyld_image_count();
     const struct mach_header* header = 0;
     
+    uint64_t maxAddress = 0;
+    uint64_t minAddress = 0;
+    
     for(uint32_t iImg = 0; iImg < imageCount; iImg++) {
         header = _dyld_get_image_header(iImg);
         if(header != NULL) {
@@ -101,15 +104,14 @@ void initBinaryImagesInfo() {
                 newImageInfo->imageName = imageNameBuffer;
             }
             g_imagesInfo.push_back(newImageInfo);
+            maxAddress = MAX(newImageInfo->maxAddress, maxAddress);
+            minAddress = MIN(newImageInfo->baseAddress, minAddress);
         }
     }
+    printf("maxAddress: %llu minaddress: %llu\n", maxAddress, minAddress);
 }
 
-ISBinaryImageInfoRef imageContainesAddress(uintptr_t address) {
-    if (g_imagesInfo.size() == 0) {
-        initBinaryImagesInfo();
-    }
-    
+ISBinaryImageInfoRef imageContainesAddressImp(uintptr_t address) {
     for (std::vector<ISBinaryImageInfoRef>::iterator it = g_imagesInfo.begin() ;
          it != g_imagesInfo.end();
          ++it) {
@@ -119,6 +121,22 @@ ISBinaryImageInfoRef imageContainesAddress(uintptr_t address) {
         }
     }
     return NULL;
+}
+
+ISBinaryImageInfoRef imageContainesAddress(uintptr_t address) {
+    if (g_imagesInfo.size() == 0) {
+        initBinaryImagesInfo();
+    }
+    
+    auto ref = imageContainesAddressImp(address);
+    
+    if (ref) {
+        return ref;
+    }
+    
+    initBinaryImagesInfo();
+    
+    return imageContainesAddressImp(address);
 }
 
 ISBinaryImageInfoRef imageOfName(const char *name) {

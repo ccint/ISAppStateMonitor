@@ -156,7 +156,7 @@ func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 
 	mainStack := s.Backtrace.Stacks[0]
 	for _, frame := range  mainStack.Frames {
-		if frame.ImageName == s.Backtrace.AppImageName && !strings.HasPrefix(frame.RetSymbol,"main main.") {
+		if frame.ImageName == s.Backtrace.AppImageName && !strings.Contains(frame.RetSymbol,"main.m") {
 			*identifier = frame.RetSymbol
 			splits := strings.Split(frame.RetSymbol, " ")
 			if len(splits) > 1 {

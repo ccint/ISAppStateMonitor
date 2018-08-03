@@ -67,6 +67,10 @@
 
 namespace ISBSRecorder {
     
+    static const int maxRecordThreadCount = 100;
+    static const int maxFramesCountPerStack = 100;
+    static const int maxThreadNamelength = 50;
+    
     struct FrameEntry {
         const struct FrameEntry *const previous;
         const uintptr_t return_address;
@@ -108,11 +112,6 @@ namespace ISBSRecorder {
                                  (vm_size_t)numBytes,
                                  (vm_address_t)dst,
                                  &bytesCopied);
-    }
-    
-    bool getThreadName(const thread_t thread, char* const buffer, int bufLength) {
-        const pthread_t pthread = pthread_from_mach_thread_np((thread_t)thread);
-        return pthread_getname_np(pthread, buffer, (unsigned)bufLength) == 0;
     }
     
     bool getQueueName(const thread_t thread, char* const buffer, int bufLength) {
@@ -163,6 +162,72 @@ namespace ISBSRecorder {
         return true;
     }
     
+    inline static thread_t thread_self() {
+        thread_t thread_self = mach_thread_self();
+        mach_port_deallocate(mach_task_self(), thread_self);
+        return thread_self;
+    }
+    
+    static void suspendOtherThreads() {
+        kern_return_t kr;
+        const task_t thisTask = mach_task_self();
+        const thread_t thisThread = (thread_t)thread_self();
+        thread_act_array_t threads;
+        mach_msg_type_number_t numThreads;
+        
+        if((kr = task_threads(thisTask, &threads, &numThreads)) != KERN_SUCCESS)
+        {
+            return;
+        }
+        
+        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
+        {
+            thread_t thread = threads[i];
+            if(thread != thisThread)
+            {
+                if((kr = thread_suspend(thread)) != KERN_SUCCESS)
+                {
+                }
+            }
+        }
+        
+        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
+        {
+            mach_port_deallocate(thisTask, threads[i]);
+        }
+        vm_deallocate(thisTask, (vm_address_t)threads, sizeof(thread_t) * numThreads);
+    }
+    
+    static void resumeOtherThreads() {
+        kern_return_t kr;
+        const task_t thisTask = mach_task_self();
+        const thread_t thisThread = (thread_t)thread_self();
+        thread_act_array_t threads;
+        mach_msg_type_number_t numThreads;
+        
+        if((kr = task_threads(thisTask, &threads, &numThreads)) != KERN_SUCCESS)
+        {
+            return;
+        }
+        
+        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
+        {
+            thread_t thread = threads[i];
+            if(thread != thisThread)
+            {
+                if((kr = thread_resume(thread)) != KERN_SUCCESS)
+                {
+                }
+            }
+        }
+        
+        for(mach_msg_type_number_t i = 0; i < numThreads; i++)
+        {
+            mach_port_deallocate(thisTask, threads[i]);
+        }
+        vm_deallocate(thisTask, (vm_address_t)threads, sizeof(thread_t) * numThreads);
+    }
+    
 #pragma -mark Interface
     status backtraceOfThread(thread_t thread, Stack & stack) {
         _STRUCT_MCONTEXT machineContext;
@@ -189,10 +254,13 @@ namespace ISBSRecorder {
             return status_error;
         }
         
-        while (1) {
+        while (stack.frames.size() < maxFramesCountPerStack) {
             uintptr_t ret_addr = frame.return_address;
             if(ret_addr == 0 || frame.previous == 0) {
                 break;
+            }
+            if (ret_addr == 2) {
+                
             }
             stack.frames.push_back(ret_addr);
             
@@ -207,27 +275,43 @@ namespace ISBSRecorder {
         return backtraceOfThread(mach_thread_self(), stack);
     }
     
-    void backtraceOfAllThread(Stacks & Stacks) {
+    void backtraceOfAllThread(Stacks & stacks) {
+        Stacks tmpStack;
+        for (int i = 0; i < maxRecordThreadCount; ++i) {
+            Stack newStack;
+            tmpStack.push_back(newStack);
+            tmpStack[i].threadName.reserve(maxThreadNamelength);
+            tmpStack[i].frames.reserve(maxFramesCountPerStack);
+        }
+        stacks.reserve(maxRecordThreadCount);
+        std::vector<int> validThreads;
+        validThreads.reserve(maxRecordThreadCount);
+        
+        suspendOtherThreads();
         thread_act_array_t threads;
         mach_msg_type_number_t thread_count = 0;
         const task_t this_task = mach_task_self();
         
         kern_return_t kr = task_threads(this_task, &threads, &thread_count);
         if(kr != KERN_SUCCESS) {
+            resumeOtherThreads();
             return;
         }
         
-        for(int i = 0; i < thread_count; ++i) {
-            char threadName[50];
-            if (!getQueueName(threads[i], threadName, 50)) {
-                getThreadName(threads[i], threadName, 50);
+        for(int i = 0; i < std::min((int)thread_count, maxRecordThreadCount); ++i) {
+            char threadName[maxThreadNamelength];
+            if (getQueueName(threads[i], threadName, maxThreadNamelength)) {
+                tmpStack[i].threadName.assign(threadName);
             }
             
-            Stack stack;
-            stack.threadName = std::string(threadName);
-            if (backtraceOfThread(threads[i], stack) == status_ok) {
-                Stacks.push_back(stack);
+            if (backtraceOfThread(threads[i], tmpStack[i]) == status_ok) {
+                validThreads.push_back(i);
             }
+        }
+        
+        resumeOtherThreads();
+        for (std::vector<int>::iterator it = validThreads.begin(); it != validThreads.end(); ++it) {
+            stacks.push_back(tmpStack[*it]);
         }
     }
 }

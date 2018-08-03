@@ -91,6 +91,8 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
             NSDictionary *configPlist = [[NSDictionary alloc] initWithContentsOfFile:configPath];
             NSString *serverHost = configPlist[@"serverhost"];
             sharedInstance.serverHost = serverHost.length ? serverHost : defaultHost;
+        } else {
+            sharedInstance.serverHost = defaultHost;
         }
         
         NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
@@ -183,7 +185,7 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
         }
         
         NSURLSession *session = sharedCenter.sharedURLSession;
-        NSURL *url = [NSURL URLWithString:@"https://192.168.16.140:4001/report"];
+        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/report", sharedCenter.serverHost]];
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
         request.HTTPMethod = @"POST";
         request.HTTPBody = finalData;
