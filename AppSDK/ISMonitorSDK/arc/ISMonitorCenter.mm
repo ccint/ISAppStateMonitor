@@ -11,12 +11,10 @@
 #import "ISSerialization.h"
 #include "ISBinaryImageHelper.h"
 
-static NSString *defaultHost = @"https://192.168.16.140:4001";
-
 @interface ISMonitorCenter() <NSURLSessionDelegate>
 @property (nonatomic, strong) ISLevelDB *logDB;
 @property (nonatomic, strong) dispatch_queue_t logQueue;
-@property (nonatomic, strong) NSString *deviceUUID;
+@property (nonatomic, strong) NSString *systemVersion;
 @property (nonatomic, strong) NSString *appId;
 @property (nonatomic, strong) NSString *appVersion;
 @property (nonatomic, strong) NSString *binaryImageName;
@@ -34,20 +32,14 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
         // get thread stack
         ISSerialization *threadInfo = [[ISSerialization alloc] init];
         auto stack = *it;
-        const char *threadName = stack.threadName.c_str();
-        NSString *threadNameStr = [NSString stringWithCString:threadName
-                                                     encoding:NSUTF8StringEncoding];
-        threadNameStr = threadNameStr.length > 0 ? threadNameStr : @"Thread";
-        [threadInfo setString:threadNameStr
-                       forKey:@"thread_name"];
         
-        // get one stack line
+        // get frames
         for (ISBSRecorder::Frames::iterator it = stack.frames.begin() ;
              it != stack.frames.end();
              ++it) {
             ISSerialization *bufferInfo = [[ISSerialization alloc] init];
             uintptr_t address = *it;
-            ISBinaryImageInfoRef matchedImage = imageContainesAddress(address);
+            ISBinaryImage::ISBinaryImageInfo *matchedImage = ISBinaryImage::imageContainesAddress(address);
             if (matchedImage) {
                 NSString *imageName = [NSString stringWithCString:matchedImage->imageName
                                                          encoding:NSUTF8StringEncoding];
@@ -65,20 +57,36 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                 [imagesInfo setString:uuid
                                forKey:imageName];
             } else {
-                NSLog(@"no match why??");
+                // no match, just ignore
             }
         }
         
-        [threadInfo setData:[threadInfo generateDataFromArray]
-                     forKey:@"th_stack"];
-        [stackInfo appendData:[threadInfo generateDataFromDictionary]];
+        NSData *framesData = [threadInfo generateDataFromArray];
+        if (framesData) {
+            const char *threadName = stack.threadName.c_str();
+            NSString *threadNameStr = [NSString stringWithCString:threadName
+                                                         encoding:NSUTF8StringEncoding];
+            threadNameStr = threadNameStr.length > 0 ? threadNameStr : @"Thread";
+            [threadInfo setString:threadNameStr
+                           forKey:@"thread_name"];
+            [threadInfo setData:framesData
+                         forKey:@"th_stack"];
+            [stackInfo appendData:[threadInfo generateDataFromDictionary]];
+        } else {
+            NSLog(@"invalid frames, ignore");
+        }
     }
-    [stackInfo setData:[stackInfo generateDataFromArray]
-                forKey:@"bs"];
-    [stackInfo setData:[imagesInfo generateDataFromDictionary]
-                forKey:@"images"];
-    [stackInfo setString:[ISMonitorCenter sharedInstance].binaryImageName forKey:@"appImageName"];
-    return [stackInfo generateDataFromDictionary];
+    NSData *stacksData = [stackInfo generateDataFromArray];
+    if (stacksData) {
+        [stackInfo setData:stacksData
+                    forKey:@"bs"];
+        [stackInfo setData:[imagesInfo generateDataFromDictionary]
+                    forKey:@"images"];
+        [stackInfo setString:[ISMonitorCenter sharedInstance].binaryImageName forKey:@"appImageName"];
+        return [stackInfo generateDataFromDictionary];
+    } else {
+        return nil;
+    }
 }
 
 + (ISMonitorCenter *)sharedInstance {
@@ -86,14 +94,26 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[ISMonitorCenter alloc] init];
-        NSString *configPath = [[NSBundle mainBundle] pathForResource:@"config" ofType:@".plist"];
-        if([[NSFileManager defaultManager] fileExistsAtPath:configPath]) {
-            NSDictionary *configPlist = [[NSDictionary alloc] initWithContentsOfFile:configPath];
-            NSString *serverHost = configPlist[@"serverhost"];
-            sharedInstance.serverHost = serverHost.length ? serverHost : defaultHost;
-        } else {
-            sharedInstance.serverHost = defaultHost;
-        }
+        NSDictionary *info = [[NSBundle mainBundle] infoDictionary];
+        NSString *appVersion = [info objectForKey:@"CFBundleShortVersionString"];
+        NSString *appid = [[NSBundle mainBundle] bundleIdentifier];
+        NSString *exeName = [info objectForKey:@"CFBundleExecutable"];
+        NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
+
+        NSString *assertMsg = [NSString stringWithFormat:@"Get Baseinfo failed Av:%@, Ap:%@, exe:%@, sv:%@",
+                               appVersion,
+                               appid,
+                               exeName,
+                               systemVersion];
+        NSAssert(appVersion.length > 0 &&
+               appid.length > 0 &&
+               exeName.length > 0 &&
+                 systemVersion.length > 0, assertMsg);
+        
+        sharedInstance.appVersion = appVersion;
+        sharedInstance.appId = appid;
+        sharedInstance.binaryImageName = exeName;
+        sharedInstance.systemVersion = systemVersion;
         
         NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
                                                                     NSUserDomainMask,
@@ -116,28 +136,25 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
     return sharedInstance;
 }
 
-+ (void)setLogBaseInfoWithAppVersion:(NSString *)appVersion
-                               appId:(NSString *)appId
-                     binaryImageName:(NSString *)binaryImageName
-                          deviceUUID:(NSString *)deviceUUID {
-    ISMonitorCenter *sharedCenter = [self sharedInstance];
-    sharedCenter.appVersion = appVersion;
-    sharedCenter.appId = appId;
-    sharedCenter.binaryImageName = binaryImageName;
-    sharedCenter.deviceUUID = deviceUUID;
++ (void)setUploadHost:(NSString *)host {
+    [self sharedInstance].serverHost = host;
 }
 
 + (void)logMainTreadTimeoutWithResult:(ISMainThreadChecker::CheckerResultPtr)checkerResultPtr {
     static ISMonitorCenter *sharedInstance = [self sharedInstance];
     dispatch_async(sharedInstance.logQueue, ^{
         NSData *stackData = getStackData(checkerResultPtr->stacks);
+        if (!stackData) {
+            NSLog(@"invalid stack, just return");
+            return ;
+        }
         ISSerialization *serialization = [[ISSerialization alloc] init];
         [serialization setData:stackData forKey:@"bs"];
         [serialization setDouble:checkerResultPtr->runloopDuration forKey:@"dur"];
         [serialization setDouble:[[NSDate date] timeIntervalSince1970] * 1000 forKey:@"time"];
         NSData *logData = [serialization generateDataFromDictionary];
         if (logData) {
-            char *logIdBuffer = (char *)calloc(7 + 20, sizeof(char));
+            char logIdBuffer[30] = {0};
             sprintf(logIdBuffer,
                     "mt_out_%llu",
                     (unsigned long long)(CFAbsoluteTimeGetCurrent() * 1000));
@@ -177,7 +194,7 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
         [serialization setData:logData forKey:@"data"];
         [serialization setString:sharedCenter.appVersion forKey:@"app_ver"];
         [serialization setString:sharedCenter.appId forKey:@"app_id"];
-        [serialization setString:sharedCenter.deviceUUID forKey:@"dev_uuid"];
+        [serialization setString:sharedCenter.systemVersion forKey:@"sys_ver"];
         [serialization setString:[self arch] forKey:@"arch"];
         NSData *finalData = [serialization generateDataFromDictionary];
         if (!finalData) {

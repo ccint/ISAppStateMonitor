@@ -9,10 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @interface ISANRWatcher : NSObject
-+ (void)setLogBaseInfoWithAppVersion:(NSString *)appVersion
-                               appId:(NSString *)appId
-                     binaryImageName:(NSString *)binaryImageName
-                          deviceUUID:(NSString *)deviceUUID;
++ (void)setUploadHost:(NSString *)host;
 + (void)startWatch:(uint64_t)runloopThreshold;
 + (void)stopWatch;
 + (int)logCount;

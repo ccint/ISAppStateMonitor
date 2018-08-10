@@ -39,9 +39,9 @@ func (s *AutoSerializeArray) SetSerializedBytes(bytes *[]byte) {
 	bytesLen := len(*bytes)
 	cursor := 0
 	for cursor < bytesLen {
-		bs := (*bytes)[cursor: cursor + 2]
-		cursor += 2
-		dataLen := int(binary.LittleEndian.Uint16(bs))
+		bs := (*bytes)[cursor: cursor + 4]
+		cursor += 4
+		dataLen := int(binary.LittleEndian.Uint32(bs))
 		s.bytes = append(s.bytes, (*bytes)[cursor: cursor + dataLen])
 		cursor += dataLen
 	}
@@ -168,8 +168,8 @@ func (s *AutoSerializeArray) DicAtIndex(idx int) (*AutoSerializeDic, bool) {
 func (s *AutoSerializeArray) SerializedBytes() *[]byte {
 	var bs []byte
 	for _, v := range s.bytes {
-		dataLenBytes := make([]byte, 2)
-		binary.LittleEndian.PutUint16(dataLenBytes, uint16(len(v)))
+		dataLenBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(v)))
 		bs = append(bs, dataLenBytes...)
 		bs = append(bs, v...)
 	}
@@ -187,9 +187,9 @@ func (s *AutoSerializeDic) SetSerializedBytes(bytes *[]byte) {
 	for cursor < bytesLen {
 		keyLen := int((*bytes)[cursor])
 		cursor += 1
-		bs := (*bytes)[cursor: cursor + 2]
-		dataLen := int(binary.LittleEndian.Uint16(bs))
-		cursor += 2
+		bs := (*bytes)[cursor: cursor + 4]
+		dataLen := int(binary.LittleEndian.Uint32(bs))
+		cursor += 4
 		keyBytes := (*bytes)[cursor: cursor + keyLen]
 		cursor += keyLen
 		dataBytes := (*bytes)[cursor: cursor + dataLen]
@@ -347,8 +347,8 @@ func (s *AutoSerializeDic) SerializedBytes() *[]byte {
 	var bs []byte
 	for k, v := range s.dic {
 		keylenByte := byte(len(k))
-		datalenByte := make([]byte, 2)
-		binary.LittleEndian.PutUint16(datalenByte, uint16(len(v)))
+		datalenByte := make([]byte, 4)
+		binary.LittleEndian.PutUint32(datalenByte, uint32(len(v)))
 		bs = append(bs, keylenByte)
 		bs = append(bs, datalenByte...)
 		bs = append(bs, k...)

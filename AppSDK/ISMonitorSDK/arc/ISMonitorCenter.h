@@ -11,10 +11,7 @@
 
 @interface ISMonitorCenter : NSObject
 
-+ (void)setLogBaseInfoWithAppVersion:(NSString *)appVersion
-                               appId:(NSString *)appId
-                     binaryImageName:(NSString *)binaryImageName
-                                deviceUUID:(NSString *)deviceUUID;
++ (void)setUploadHost:(NSString *)host;
 
 + (void)logMainTreadTimeoutWithResult:(ISMainThreadChecker::CheckerResultPtr)checkerResultPtr;
 

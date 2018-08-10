@@ -1,5 +1,7 @@
 import anr from './anr'
+import missingDsym from './missingDsym'
 
 export default {
-  anr
+  anr,
+  missingDsym
 }

@@ -17,8 +17,13 @@ let getIssueSession = (id) => {
   return axiosInstance.get(`/issue_session?id=${id}`)
 }
 
+let getMissingDsyms = () => {
+  return axiosInstance.get('/missing_dsym')
+}
+
 export {
   getAllIssues,
   getIssueDetails,
-  getIssueSession
+  getIssueSession,
+  getMissingDsyms
 }

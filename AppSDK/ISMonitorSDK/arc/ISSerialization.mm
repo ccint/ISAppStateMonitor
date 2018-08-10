@@ -12,14 +12,14 @@
 
 typedef struct ISSerializationPair {
   NSString *key;
-  NSUInteger keylen;
+  uint8_t keylen;
   NSData *data;
-  NSUInteger dataLen;
+  uint32_t dataLen;
 } ISSerializationPair;
 
 typedef struct ISSerializationElement {
   NSData *data;
-  NSUInteger dataLen;
+  uint32_t dataLen;
 } ISSerializationElement;
 
 @interface ISSerialization() {
@@ -39,9 +39,9 @@ typedef struct ISSerializationElement {
   }
   ISSerializationPair pair = {
     key,
-    key.length,
+    (uint8_t)key.length,
     data,
-    data.length
+    (uint32_t)data.length
   };
   _pairs.push_back(pair);
 }
@@ -83,18 +83,17 @@ typedef struct ISSerializationElement {
 
 - (NSData *)generateDataFromDictionary {
   // |----------------------------|
-  // | 1byte | 2byte | key | data |
+  // | 1byte | 4byte | key | data |
   // |----------------------------|
-  // 第1个字节保存key的长度 第2-3个字节保存data的长度
+  // 第1个字节保存key的长度 第2-5个字节保存data的长度
   // key存储key的数据，data存储data的数据
   // 通过以上数据可以算出key、data以及下一个pair的偏移
   NSUInteger bytesLen = 0;
   
-  
   for (std::vector<ISSerializationPair>::iterator it = _pairs.begin() ;
        it != _pairs.end();
        ++it) {
-    bytesLen += it->keylen + it->dataLen + 3;
+    bytesLen += it->keylen + it->dataLen + 5;
   }
   
   if (bytesLen) {
@@ -103,12 +102,12 @@ typedef struct ISSerializationElement {
     for (std::vector<ISSerializationPair>::iterator it = _pairs.begin() ;
          it != _pairs.end();
          ++it) {
-      char keyLen = it->keylen;
-      short dataLen = it->dataLen;
+      uint8_t keyLen = it->keylen;
+      uint32_t dataLen = it->dataLen;
       memcpy(cursor, &keyLen, 1);
       cursor += 1;
-      memcpy(cursor, &dataLen, 2);
-      cursor += 2;
+      memcpy(cursor, &dataLen, 4);
+      cursor += 4;
       memcpy(cursor, [it->key cStringUsingEncoding:NSUTF8StringEncoding], it->keylen);
       cursor += it->keylen;
       memcpy(cursor, it->data.bytes, it->dataLen);
@@ -136,12 +135,12 @@ typedef struct ISSerializationElement {
   char *bytes = (char *)data.bytes;
   char *cursor = bytes;
   while (cursor - bytes < data.length) {
-    char keylen = 0;
+    uint8_t keylen = 0;
     memcpy(&keylen, cursor, 1);
     cursor += 1;
-    short datalen = 0;
-    memcpy(&datalen, cursor, 2);
-    cursor += 2;
+    uint32_t datalen = 0;
+    memcpy(&datalen, cursor, 4);
+    cursor += 4;
     char *key = (char *)malloc(sizeof(char) * keylen);
     memcpy(key, cursor, keylen);
     cursor += keylen;
@@ -199,7 +198,7 @@ typedef struct ISSerializationElement {
   }
   ISSerializationElement element = {
     data,
-    data.length
+    (uint32_t)data.length
   };
   _elements.push_back(element);
 }
@@ -232,16 +231,16 @@ typedef struct ISSerializationElement {
 
 - (NSData *)generateDataFromArray {
   // |---------------|
-  // | 2byte | data |
+  // | 4byte | data |
   // |---------------|
-  // 前2个字节保存data的长度
+  // 前4个字节保存data的长度
   // data存储data的数据
   NSUInteger bytesLen = 0;
   
   for (std::vector<ISSerializationElement>::iterator it = _elements.begin() ;
        it != _elements.end();
        ++it) {
-    bytesLen += it->dataLen + 2;
+    bytesLen += it->dataLen + 4;
   }
   
   if (bytesLen) {
@@ -250,9 +249,9 @@ typedef struct ISSerializationElement {
     for (std::vector<ISSerializationElement>::iterator it = _elements.begin() ;
          it != _elements.end();
          ++it) {
-      short dataLen = it->dataLen;
-      memcpy(cursor, &dataLen, 2);
-      cursor += 2;
+      uint32_t dataLen = it->dataLen;
+      memcpy(cursor, &dataLen, 4);
+      cursor += 4;
       memcpy(cursor, it->data.bytes, it->dataLen);
       cursor += it->dataLen;
     }
@@ -278,9 +277,9 @@ typedef struct ISSerializationElement {
   char *bytes = (char *)data.bytes;
   char *cursor = bytes;
   while (cursor - bytes < data.length) {
-    short datalen = 0;
-    memcpy(&datalen, cursor, 2);
-    cursor += 2;
+    uint32_t datalen = 0;
+    memcpy(&datalen, cursor, 4);
+    cursor += 4;
     char *data = (char *)malloc(sizeof(char) * datalen);
     memcpy(data, cursor, datalen);
     cursor += datalen;

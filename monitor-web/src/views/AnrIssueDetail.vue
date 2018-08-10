@@ -25,6 +25,12 @@
         </div>
         <div class="stack-header">
             Stacktrace
+            <label class="resymbol-label"
+                   @click="tryReSymbolicate"
+            >
+                <font-awesome-icon icon="faSync" style="margin-right: 3px"/>
+                Re-Symbolicate
+            </label>
         </div>
         <stack-cell class="stack-frames"
                     v-for="(stack, idx) in stacks"
@@ -84,13 +90,16 @@ export default {
     }
   },
   methods: {
-    ...mapActions('anr', ['getSessionDetail']),
+    ...mapActions('anr', ['getSessionDetail', 'reSymbolicate']),
     goNext (isPrev) {
       if ((isPrev && this.hasPrev) || (!isPrev && this.hasNext)) {
         let nextIdx = isPrev ? this.currentSession.idx - 1 : this.currentSession.idx + 1
         let nextId = this.issueDetail.sessions[nextIdx]
         this.$router.push(`/anr/issue_detail/${this.$route.params.iid}/session/${nextId}`)
       }
+    },
+    tryReSymbolicate () {
+      this.reSymbolicate({sid: this.$route.params.sid})
     }
   },
   beforeMount () {
@@ -139,6 +148,22 @@ export default {
             font-size: 16px;
             margin: 15px 0 15px 0;
             color: rgb(5, 5, 5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            .resymbol-label {
+                cursor: pointer;
+                color: white;
+                background: rgb(0, 139, 243);
+                border-radius: 5px;
+                padding: 2px 8px 2px 8px;
+                font-size: 14px;
+                font-style: italic;
+                transition: background ease 0.3s;
+                &:hover {
+                    background: rgba(0, 139, 243, 0.8);
+                }
+            }
         }
         .stack-frames {
             margin-bottom: 20px;

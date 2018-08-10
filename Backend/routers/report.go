@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	"../symbolization"
 	"../serialization"
 	"../reportStore"
 	"github.com/tecbot/gorocksdb"
 	"log"
+	"strings"
 )
 
 // Thread Pool
@@ -105,7 +105,7 @@ func archiveReport(report *[]byte) {
 
 	appVersion, _ := dataDic.StringWithKey("app_ver")
 	appId, _ := dataDic.StringWithKey("app_id")
-	devUUID, _ := dataDic.StringWithKey("dev_uuid")
+	sysVersion, _ := dataDic.StringWithKey("sys_ver")
 	arch, _ := dataDic.StringWithKey("arch")
 	reportType, _ := dataDic.StringWithKey("type")
 
@@ -121,7 +121,7 @@ func archiveReport(report *[]byte) {
 			anrReport.Init()
 			anrReport.AppVersion = *appVersion
 			anrReport.AppId = *appId
-			anrReport.DeviveUUID = *devUUID
+			anrReport.SysVersion = *sysVersion
 			anrReport.Arch = *arch
 
 			anrReport.Duration = dur
@@ -137,7 +137,7 @@ func archiveReport(report *[]byte) {
 			allKeys := uuidMap.Allkeys()
 			for i := 0; i < len(allKeys); i++ {
 				v, _ := uuidMap.StringWithKey(allKeys[i])
-				imageMaps[allKeys[i]] = *v
+				imageMaps[allKeys[i]] = strings.Replace(*v, "-", "", -1)
 			}
 
 			backtrace.ImageMaps = imageMaps
@@ -162,25 +162,10 @@ func archiveReport(report *[]byte) {
 						modeName, _ := threadBsDic.StringWithKey("mod_name")
 						retAdr, _ := threadBsDic.Uint64WithKey("ret_adr")
 						loadAdr, _ := threadBsDic.Uint64WithKey("load_adr")
-						var symbol string
-						if uuid, ok := imageMaps[*modeName]; ok == true {
-							offset := retAdr - loadAdr
-							v, err := symbolization.Symbol(offset, uuid, *arch)
-							if err != nil {
-								fmt.Println("get symbol err: " + err.Error())
-							} else {
-								symbol = v
-								if *modeName == *appImageName {
-									backtrace.IsSymbolized = true
-								}
-							}
-						}
+
 						frame.ImageName = *modeName
 						frame.RetAddress = retAdr
 						frame.LoadAddress = loadAdr
-						if len(symbol) > 0 {
-							frame.RetSymbol = symbol
-						}
 
 						*frames = append(*frames, frame)
 					}
@@ -190,6 +175,7 @@ func archiveReport(report *[]byte) {
 			}
 			backtrace.Stacks = *stacks
 			anrReport.Backtrace = backtrace
+			anrReport.Symbolicate()
 			anrReport.SaveToStorage()
 		}
 	}

@@ -8,6 +8,16 @@ import (
 	"../reportStore"
 )
 
+func GetAllMissingDYSM (w http.ResponseWriter, req *http.Request) {
+	results := reportStore.GetAllMissingDSYMs()
+
+	ret := map[string] interface{} {"count": len(*results), "data": *results}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(ret)
+}
+
 func GetAllReportsOfIssue(w http.ResponseWriter, req *http.Request) {
 	issueId := req.URL.Query().Get("id")
 
@@ -43,7 +53,7 @@ func GetReportDetail(w http.ResponseWriter, req *http.Request) {
 
 			source := ""
 			if frame.ImageName == report.Backtrace.AppImageName {
-				splits := strings.Split(frame.RetSymbol, " ")
+				splits := strings.Split(frame.RetSymbol, "\u0009")
 				if len(splits) > 1 {
 					source = splits[len(splits) - 1]
 				}

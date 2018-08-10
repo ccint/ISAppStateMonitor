@@ -8,10 +8,15 @@ import (
 	"io/ioutil"
 	"archive/zip"
 	"path/filepath"
-	"path"
+	"fmt"
+	"github.com/satori/go.uuid"
+	"sync"
+	"os/exec"
 	"strings"
 	"../symbolization"
-	"fmt"
+	"../reportStore"
+	"encoding/json"
+	"time"
 )
 
 func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
@@ -19,52 +24,173 @@ func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleDsymReq(w http.ResponseWriter, req *http.Request) {
+	ret := make(map[string] interface{})
+	ignoreRet := req.URL.Query().Get("ignore_ret")
 	switch req.Method {
 	case "POST":
+		ret["ret"] = "-1"
 		req.ParseMultipartForm(32 << 20)
-		file, handler, err := req.FormFile("file")
+		file, _, err := req.FormFile("file")
 		if err != nil {
 			fmt.Println(err)
+			ret["msg"] = err.Error()
 			return
 		}
 		defer file.Close()
-		f, err := os.OpenFile("./resource/tmp/" + handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+		fileUUID := uuid.Must(uuid.NewV4()).String()
+		tmpFilePath := "./resource/tmp/" + fileUUID + ".zip"
+		f, err := os.OpenFile(tmpFilePath, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			fmt.Println(err)
+			ret["msg"] = err.Error()
 			return
 		}
 		defer f.Close()
 		if _, err = io.Copy(f, file); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
 			fmt.Println(err)
+			ret["msg"] = err.Error()
 			return
 		}
-		fmt.Fprintf(w, "true")
-		go handleDSYMFile("./resource/tmp/" + handler.Filename, getFileName(handler.Filename))
 
+		var result *[]map[string] string
+
+		if ignoreRet == "1" {
+			go handleDSYMFiles(tmpFilePath, fileUUID)
+		} else {
+			result = handleDSYMFiles(tmpFilePath, fileUUID)
+			ret["data"] = result
+		}
+		ret["ret"] = "0"
 	default:
-		fmt.Println("get")
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		ret["ret"] = "-1"
+		ret["msg"] = "get is invalid"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(ret)
+}
+
+func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
+
+	now := time.Now()
+	fmt.Println("start handle dysm file")
+
+	destDir := "./resource/tmp/symbols/" + uuid
+
+	if err := Unzip(filepath, destDir); err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	{
+		files, err := ioutil.ReadDir(destDir)
+		if err != nil {
+			log.Fatal(err)
+			return nil
+		}
+
+		var sg sync.WaitGroup
+		sg.Add(len(files))
+
+		for _, f := range files {
+			var fPath = destDir + "/" + f.Name()
+			go genST(fPath, f.IsDir(), &sg)
+		}
+
+		sg.Wait()
+	}
+
+	{
+		zips, err := ioutil.ReadDir(destDir)
+		if err != nil {
+			log.Fatal(err)
+			return nil
+		}
+
+		for _, zf := range zips {
+			var zfPath = destDir + "/" + zf.Name()
+			if strings.HasSuffix(zf.Name(),".zip") {
+				Unzip(zfPath, destDir)
+			}
+			os.Remove(zfPath)
+		}
+	}
+
+	importResult := new([]map[string] string)
+
+	{
+		symbols, err := ioutil.ReadDir(destDir)
+		if err != nil {
+			log.Fatal(err)
+			return nil
+		}
+
+		var sg sync.WaitGroup
+
+		sg.Add(len(symbols))
+
+		mutex := sync.Mutex{}
+
+		for _, symbol := range symbols {
+			var sPath = destDir + "/" + symbol.Name()
+			go importDSYMTable(sPath, &sg, importResult, &mutex)
+		}
+
+		sg.Wait()
+	}
+
+	if err := os.RemoveAll(destDir); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := os.Remove(filepath); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("handle dysm succeed, total cost time " + time.Since(now).String())
+
+	return importResult
+}
+
+func genST(fp string, isDir bool, group *sync.WaitGroup) {
+	defer group.Done()
+
+	fPabsolute, _ := filepath.Abs(fp)
+	tPabsolute, _ := filepath.Abs("./utils/symbolicate/buglySymboliOS.jar")
+
+	cmd := exec.Command("java", "-jar", tPabsolute, "-i", fPabsolute)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	if isDir {
+		if err := os.RemoveAll(fp); err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		if err := os.Remove(fp); err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
-func handleDSYMFile(filepath string, uuid string) {
-	destDir := "./resource/tmp/symbols/" + uuid
-	if err := Unzip(filepath, destDir); err != nil {
-		log.Fatal(err)
-		return
-	}
+func importDSYMTable(filepath string, group *sync.WaitGroup, results *[]map[string] string, mutex *sync.Mutex) {
+	defer group.Done()
+	if stUUID, err := symbolization.ImportDSYMTable(filepath); err == nil && len(stUUID) > 0 {
+		result := map[string] string{"uuid": stUUID}
 
-	files, err := ioutil.ReadDir(destDir)
-	if err != nil {
-		log.Fatal(err)
-	}
+		dsym, ok := reportStore.RemoveMissingDSYMS(stUUID)
+		if ok {
+			result["name"] = dsym.Name
+		}
 
-	for _, f := range files {
-		symbolization.ImportDSYMTable(destDir + "/" + f.Name(), uuid)
+		mutex.Lock()
+		*results = append(*results, result)
+		mutex.Unlock()
 	}
-	os.RemoveAll(destDir)
-	os.Remove(filepath)
 }
 
 func Unzip(src, dest string) error {
@@ -123,10 +249,4 @@ func Unzip(src, dest string) error {
 	}
 
 	return nil
-}
-
-func getFileName(filePath string) string {
-	filenameWithSuffix := path.Base(filePath)
-	fileSuffix := path.Ext(filenameWithSuffix)
-	return strings.TrimSuffix(filenameWithSuffix, fileSuffix)
 }

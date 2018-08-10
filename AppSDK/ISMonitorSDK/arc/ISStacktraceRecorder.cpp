@@ -259,9 +259,6 @@ namespace ISBSRecorder {
             if(ret_addr == 0 || frame.previous == 0) {
                 break;
             }
-            if (ret_addr == 2) {
-                
-            }
             stack.frames.push_back(ret_addr);
             
             if (mach_copyMem(frame.previous, &frame, sizeof(frame)) != KERN_SUCCESS) {
@@ -284,8 +281,6 @@ namespace ISBSRecorder {
             tmpStack[i].frames.reserve(maxFramesCountPerStack);
         }
         stacks.reserve(maxRecordThreadCount);
-        std::vector<int> validThreads;
-        validThreads.reserve(maxRecordThreadCount);
         
         suspendOtherThreads();
         thread_act_array_t threads;
@@ -305,14 +300,10 @@ namespace ISBSRecorder {
             }
             
             if (backtraceOfThread(threads[i], tmpStack[i]) == status_ok) {
-                validThreads.push_back(i);
+                stacks.push_back(std::move(tmpStack[i]));
             }
         }
-        
         resumeOtherThreads();
-        for (std::vector<int>::iterator it = validThreads.begin(); it != validThreads.end(); ++it) {
-            stacks.push_back(tmpStack[*it]);
-        }
     }
 }
 

@@ -13,9 +13,13 @@
                 </div>
             </div>
             <div class="menu">
-                <div class="menu-item">
-                    <font-awesome-icon icon="spinner" class="muen-item-icon"/>
-                    <span class="menu-item-text">Anr Issues</span>
+                <div v-for="(item, idx) in menuItems"
+                     :class="item.class"
+                     :key="idx"
+                     @click="menuItemClicked(idx)"
+                >
+                    <font-awesome-icon :icon="item.icon" class="muen-item-icon"/>
+                    <span class="menu-item-text">{{item.name}}</span>
                 </div>
             </div>
         </Sider>
@@ -43,12 +47,17 @@ export default {
   name: 'app',
   data () {
     return {
-      navis: []
+      navis: [],
+      menuItems: [],
+      selectedItemIdx: -1
     }
   },
   watch: {
     routePath (newValue) {
       this.updateNavis(newValue)
+    },
+    selectedItemIdx (newValue) {
+      this.updateMenuItems()
     }
   },
   computed: {
@@ -64,20 +73,49 @@ export default {
         this.$router.push(path)
       }
     },
+    menuItemClicked (idx) {
+      let item = this.menuItems[idx]
+      let path = item.to
+      if (typeof path !== 'undefined') {
+        this.$router.push(path)
+      }
+      this.selectedItemIdx = idx
+    },
+    updateMenuItems () {
+      let items = [{name: 'Anr Issues', icon: 'ban', to: '/anr'},
+        {name: 'Missing dSYMs', icon: 'cloud-upload-alt', to: '/missing_dsym'}]
+      for (let idx = 0; idx < items.length; ++idx) {
+        let item = items[idx]
+        if (this.selectedItemIdx === idx) {
+          item['class'] = ['menu-item-selected']
+        } else {
+          item['class'] = ['menu-item-normal']
+        }
+      }
+      this.menuItems = items
+    },
     updateNavis (path) {
       if (path.includes('/anr/issue_detail/') && path.includes('session')) {
         this.navis = [{to: '/anr', name: 'Anr Issues'}, {name: 'Issue Details'}]
-      } else {
+      } else if (this.selectedItemIdx === 0 || this.selectedItemIdx === -1 || path === '/' || path === '') {
         this.navis = [{to: '/anr', name: 'Anr Issues'}]
+      } else {
+        this.navis = [{name: 'Missing dSYMs'}]
       }
     }
   },
   beforeMount () {
     let path = this.$route.path
-    this.updateNavis(path)
-    if (path === '/' || path === '') {
-      this.naviClicked(0) // 默认项 之后会改造
+    if (path.startsWith('/anr')) {
+      this.selectedItemIdx = 0
+    } else if (path.startsWith('/missing_dsym')) {
+      this.selectedItemIdx = 1
+    } else if (path === '/' || path === '') {
+      this.selectedItemIdx = 0
+      this.updateMenuItems()
+      this.menuItemClicked(this.selectedItemIdx)
     }
+    this.updateNavis(path)
   }
 }
 </script>
@@ -98,7 +136,7 @@ export default {
             height: 100px;
             display: flex;
             align-items: center;
-            transition: background ease 0.5s;
+            transition: background ease 0.3s;
             border-bottom: 1px solid rgb(32, 53, 61);
             .app-icon {
                 height: 30px;
@@ -165,19 +203,34 @@ export default {
     .menu {
         display: flex;
         flex-direction: column;
-        .menu-item {
+        .menu-item-normal {
             cursor: pointer;
-            border-left: 6px solid rgb(0, 139, 243);
-            background: rgb(20, 52, 79);
+            border-left: 6px solid transparent;
             font-size: 14px;
             font-weight: 500;
             display: flex;
             align-items: center;
-            height: 35px;
-            color: rgb(234, 245, 252);
-            .muen-item-icon {
-                margin: 0 15px 0 30px;
+            height: 40px;
+            color: rgb(136, 153, 166);
+            transition: background ease 0.3s;
+            &:hover {
+                background: rgba(20, 52, 79, 0.3);
             }
+        }
+        .menu-item-selected {
+            cursor: pointer;
+            border-left: 6px solid rgb(0, 139, 243);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            height: 40px;
+            color: rgb(234, 245, 252);
+            background: rgb(20, 52, 79);
+        }
+        .muen-item-icon {
+            margin: 0 15px 0 30px;
+            width: 20px;
         }
     }
 </style>

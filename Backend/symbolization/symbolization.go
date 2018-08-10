@@ -1,11 +1,12 @@
 package symbolization
 
+// #include "demangle.h"
+import "C"
 import (
 	"github.com/tecbot/gorocksdb"
 	"log"
 	"errors"
 	"strings"
-	"path"
 	"os"
 	"bufio"
 	"strconv"
@@ -64,20 +65,13 @@ func InitSymbolization() {
 	openDB()
 }
 
-func ImportDSYMTable(filePath string, uuid string) error {
-	fileName := getFileName(filePath)
-	fileInfos := strings.Split(fileName, "&")
-	arch := fileInfos[len(fileInfos) - 2]
+func ImportDSYMTable(filePath string) (string, error) {
 	timeNow := time.Now()
 	fmt.Println("start import symbols from: " + filePath)
 
-	if len(uuid) <= 0 {
-		return errors.New("failed to get uuid")
-	}
-
 	file, err := os.Open(filePath)
 	if err != nil {
-		return errors.New("open dysm file failed")
+		return "", errors.New("open dysm file failed")
 	}
 
 	defer file.Close()
@@ -88,42 +82,57 @@ func ImportDSYMTable(filePath string, uuid string) error {
 
 	defer writeBatch.Destroy()
 
+	var uuid string
+
 	for input.Scan() {
 		line := input.Text()
 		elements := strings.Split(line, "\u0009")
-		if len(elements) != 3 {
-			return errors.New("parse failed, invalid line :" + line)
-		}
-		startAdr, err0 := strconv.ParseUint(elements[0], 16, 0)
-		if err0 != nil {
-			return errors.New("parse failed, invalid line :" + line)
-		}
+		if len(elements) == 2 && elements[0] == "UUID:" {
+			uuid = strings.ToUpper(elements[1])
+		} else if len(elements) >= 3 && len(uuid) > 0 {
+			startAdr, err0 := strconv.ParseUint(elements[0], 16, 0)
+			if err0 != nil {
+				return "", errors.New("parse failed, invalid line :" + line)
+			}
 
-		symbols := elements[2]
+			symbol := elements[2]
 
-		if len(symbols) <= 0 {
-			return errors.New("parse failed, invalid line :" + line)
+			if strings.HasPrefix(symbol,"_Z") || strings.HasPrefix(symbol,"__Z") {
+				symbol = demangleCppSymbol(symbol)
+			}
+
+			if strings.HasPrefix(symbol,"_T") || strings.HasPrefix(symbol,"__T") {
+				symbol = demangleSwiftSymbol(symbol)
+			}
+
+			if len(elements) == 4 {
+				symbol = symbol + "\u0009" + elements[3]
+			}
+
+			if len(symbol) <= 0 {
+				return "", errors.New("parse failed, invalid line :" + line)
+			}
+
+			key := uuid + "_" + strconv.FormatUint(startAdr, 16)
+			writeBatch.Put([]byte(key), []byte(symbol))
 		}
-
-		key := uuid + "_" + arch + "_" + strconv.FormatUint(startAdr, 16)
-		writeBatch.Put([]byte(key), []byte(symbols))
 	}
 
 	writeErr := dysmDB.Write(wo, writeBatch)
 
 	if writeErr != nil {
 		fmt.Println(writeErr)
-		return writeErr
+		return "", writeErr
 	} else {
 		fmt.Printf("import %s succeed\n", filePath)
 		fmt.Printf("time cost: ")
 		fmt.Println(time.Since(timeNow))
 	}
 
-	return nil
+	return uuid, nil
 }
 
-func Symbol(offset uint64, uuid string, arch string) (string, error) {
+func Symbol(offset uint64, uuid string) (string, error) {
 	offsetStr := strconv.FormatUint(offset, 16)
 	if len(offsetStr) <= 0 {
 		return "", errors.New("invalid offset")
@@ -137,7 +146,7 @@ func Symbol(offset uint64, uuid string, arch string) (string, error) {
 
 	defer iterator.Close()
 
-	prefix := uuid + "_" + arch + "_"
+	prefix := strings.ToUpper(uuid) + "_"
 	iterator.SeekForPrev([]byte(prefix + offsetStr))
 	if iterator.ValidForPrefix([]byte(prefix)) {
 		value := string(iterator.Value().Data())
@@ -146,11 +155,24 @@ func Symbol(offset uint64, uuid string, arch string) (string, error) {
 		}
 	}
 
-	return  "", nil
+	return  "", errors.New("symbol not found")
 }
 
-func getFileName(filePath string) string {
-	filenameWithSuffix := path.Base(filePath)
-	fileSuffix := path.Ext(filenameWithSuffix)
-	return strings.TrimSuffix(filenameWithSuffix, fileSuffix)
+func demangleCppSymbol(symbol string) string {
+	if strings.HasPrefix(symbol, "__Z") {
+		symbol = strings.Replace(symbol, "__Z","_Z",1)
+	}
+
+	result := C.cpp_demangle(C.CString(symbol))
+	resultString := C.GoString(result)
+	return resultString
+}
+
+func demangleSwiftSymbol(symbol string) string {
+	if strings.HasPrefix(symbol, "__T") {
+		symbol = strings.Replace(symbol, "__T","_T",1)
+	}
+	result := C.swift_demangle(C.CString(symbol))
+	resultString := C.GoString(result)
+	return resultString
 }

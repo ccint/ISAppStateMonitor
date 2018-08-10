@@ -18,6 +18,7 @@ namespace ISMainThreadChecker {
     
     static const uint64_t USEC_PER_MSEC = 1000ULL;
     static const uint64_t NANOS_PER_USEC = 1000ULL;
+    static int g_logCount = 0;
     static Checker *checkerInstance;
     
 #pragma mark - Tools
@@ -75,13 +76,13 @@ namespace ISMainThreadChecker {
         auto checker = (Checker *)argument;
         while (1) {
             dispatch_semaphore_wait(checker->loopSem, DISPATCH_TIME_FOREVER);
-            auto result = checker->result;
+            auto result = checker->getResult();
             if (result) {
                 uint64_t semDuration = ((CACurrentMediaTime() - result->runloopId) * USEC_PER_SEC);
                 checker->isScheduing = true;
                 wait_until(checker->waitTime * USEC_PER_MSEC - semDuration, checker->timebase_info);
                 checker->isScheduing = false;
-                auto resultAtMoment = checker->result;
+                auto resultAtMoment = checker->getResult();
                 if (resultAtMoment &&
                     result->runloopId == resultAtMoment->runloopId &&
                     ((CACurrentMediaTime() - resultAtMoment->runloopId) * USEC_PER_SEC) >= checker->waitTime * USEC_PER_MSEC &&
@@ -98,10 +99,10 @@ namespace ISMainThreadChecker {
         if (activity == kCFRunLoopAfterWaiting) {
             checkerInstance->beginSchedule();
         } else if (activity == kCFRunLoopBeforeWaiting) {
-            auto result = checkerInstance->result;
+            auto result = checkerInstance->getResult();
             if (result && result->stacks.size() > 0) {
-                count += 1;
-                printf("count %d\n", count);
+                result->runloopDuration = (CACurrentMediaTime() - result->runloopId) * 1000;
+                g_logCount += 1;
                 [ISMonitorCenter logMainTreadTimeoutWithResult:result];
             }
             checkerInstance->finishSchedule();
@@ -109,6 +110,10 @@ namespace ISMainThreadChecker {
     }
     
 #pragma mark - Checker Impl
+    
+    int logCount() {
+        return g_logCount;
+    }
     
     Checker::~Checker(){
         this->mainThread = nullptr;
@@ -135,7 +140,7 @@ namespace ISMainThreadChecker {
     }
     
     void Checker::beginSchedule() {
-        this->result = CheckerResultPtr(new CheckerResult(CACurrentMediaTime()));
+        this->setResult(std::make_shared<CheckerResult>(CACurrentMediaTime()));
         if (this->isScheduing) {
             pthread_kill(this->thread, SIGALRM);
         }
@@ -143,7 +148,7 @@ namespace ISMainThreadChecker {
     }
     
     void Checker::finishSchedule() {
-        this->result = nullptr;
+        this->setResult(nullptr);
     }
     
     bool Checker::startWatch(uint64_t runloopThreshold) {
@@ -182,6 +187,14 @@ namespace ISMainThreadChecker {
         this->isWatching = true;
         
         return result;
+    }
+    
+    CheckerResultPtr Checker::getResult() {
+        return std::atomic_load(&this->result);
+    }
+    
+    void Checker::setResult(CheckerResultPtr newPtr) {
+        std::atomic_store(&this->result, newPtr);
     }
     
     void Checker::stopWatch() {

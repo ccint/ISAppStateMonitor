@@ -12,7 +12,8 @@
 #include <memory>
 
 namespace ISMainThreadChecker {
-    static int count = 0;
+    int logCount();
+    
     struct CheckerResult {
         double runloopId;
         double runloopDuration;
@@ -23,6 +24,7 @@ namespace ISMainThreadChecker {
         ,runloopDuration(0)
         ,stacks()
         {
+            
         }
     };
     
@@ -36,7 +38,6 @@ namespace ISMainThreadChecker {
         double currentRunloopId;
         uint64_t waitTime;
         bool isScheduing;
-        CheckerResultPtr result;
         CFRunLoopObserverRef wakeObserver;
         CFRunLoopObserverRef sleepObserver;
         bool isWatching;
@@ -49,6 +50,12 @@ namespace ISMainThreadChecker {
         
         void beginSchedule();
         void finishSchedule();
+        
+        CheckerResultPtr getResult();
+        
+    private:
+        void setResult(CheckerResultPtr newPtr);
+        CheckerResultPtr result;
     };
     
     void startWatch(uint64_t runloopThreshold);

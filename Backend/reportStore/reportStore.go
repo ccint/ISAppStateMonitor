@@ -6,14 +6,19 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"errors"
+	"sync"
+	"../symbolization"
 )
 
 var (
 	mgoSession *mgo.Session
-	hosts = 				[]string {"127.0.0.1:27017"}
-	dataBase = 				"database"
-	reportCollection =  	"anrReport"
-	issueCollection =   	"issue"
+	hosts             = 	[]string {"127.0.0.1:27017"}
+	dataBase          =  	"database"
+	reportCollection  =  	"anrReport"
+	issueCollection   =   	"issue"
+	dsymCollection    =     "dsym"
+	missingDSYMs      =     sync.Map{}
 )
 
 type (
@@ -41,7 +46,7 @@ type (
 		ReportId 	bson.ObjectId `bson:"_id"`
 		AppVersion  string
 		AppId 	    string
-		DeviveUUID  string
+		SysVersion  string
 		Arch 		string
 
 		// anr data
@@ -60,6 +65,16 @@ type (
 		IssueAffectVersionEnd   string
 		IssueCreateTime         float64
 		IssueLastUpdateTime     float64
+	}
+
+	MissingDSYM struct {
+		Id				bson.ObjectId `bson:"_id"`
+		Name 			string
+		UUID			string
+		Arch			string
+		AppName			string
+		AppVersion 		string
+		SystemVersion	string
 	}
 )
 
@@ -100,6 +115,13 @@ func (s *AnrReport) SaveToStorage() error {
 		c := session.DB(dataBase).C(reportCollection)
 		return c.Insert(s)
 	}
+}
+
+func (s *AnrReport)UpdateToStorage() error {
+	session := getSession()
+	defer session.Close()
+	c := session.DB(dataBase).C(reportCollection)
+	return c.UpdateId(s.ReportId, s)
 }
 
 func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
@@ -158,7 +180,7 @@ func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 	for _, frame := range  mainStack.Frames {
 		if frame.ImageName == s.Backtrace.AppImageName && !strings.Contains(frame.RetSymbol,"main.m") {
 			*identifier = frame.RetSymbol
-			splits := strings.Split(frame.RetSymbol, " ")
+			splits := strings.Split(frame.RetSymbol, "\u0009")
 			if len(splits) > 1 {
 				*sourceFile = splits[len(splits) - 1]
 			} else {
@@ -171,6 +193,44 @@ func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 	*identifier = mainStack.Frames[0].RetSymbol
 	*sourceFile = mainStack.Frames[0].ImageName
 	return identifier, sourceFile
+}
+
+func (s *AnrReport)Symbolicate() {
+	bs := &(s.Backtrace)
+	imagesMap := bs.ImageMaps
+
+	stacks := &(bs.Stacks)
+
+	for i := 0; i < len(*stacks); i++ {
+		stack := &((*stacks)[i])
+
+		frams := &((*stack).Frames)
+
+		for i := 0; i < len(*frams); i++ {
+			frame := &((*frams)[i])
+			if uuid, ok := imagesMap[frame.ImageName]; ok == true {
+				offset := frame.RetAddress - frame.LoadAddress
+				v, err := symbolization.Symbol(offset, uuid)
+				if err != nil {
+					// not found, add missing dsym record
+					missingDsym := MissingDSYM{}
+					missingDsym.Init()
+					missingDsym.Name = frame.ImageName
+					missingDsym.UUID = uuid
+					missingDsym.Arch = s.Arch
+					missingDsym.AppVersion = s.AppVersion
+					missingDsym.AppName = bs.AppImageName
+					missingDsym.SystemVersion = s.SysVersion
+					missingDsym.SaveToStorage()
+				} else {
+					frame.RetSymbol = v
+					if frame.ImageName == bs.AppImageName {
+						bs.IsSymbolized = true
+					}
+				}
+			}
+		}
+	}
 }
 
 var reportBuffer *[]interface{}
@@ -202,19 +262,31 @@ func (s *Issue) Init() {
 	s.IssueId = bson.NewObjectId()
 }
 
+func (s *MissingDSYM) Init() {
+	s.Id = bson.NewObjectId()
+}
 
-func GetAllReports() *[]AnrReport {
+func (s *MissingDSYM) SaveToStorage() error {
+	if len(s.UUID) <= 0 {
+		return errors.New("UUID is Invalid")
+	}
+
+	if _, ok := missingDSYMs.Load(s.UUID); ok == true {
+		return nil
+	}
+
 	session := getSession()
 	defer session.Close()
 
-	var results []AnrReport
+	c := session.DB(dataBase).C(dsymCollection)
 
-	c := session.DB(dataBase).C(reportCollection)
-	err := c.Find(nil).All(&results)
-	if err != nil {
-		fmt.Println(err)
+	err := c.Insert(s)
+
+	if err == nil {
+		missingDSYMs.Store(s.UUID, *s)
 	}
-	return &results
+
+	return err
 }
 
 func GetAllIssues(start int, pageSize int) (int, *[]Issue) {
@@ -266,3 +338,48 @@ func GetReportOfId(reportId string) AnrReport {
 	return result
 }
 
+func InitMissingDsym () {
+	session := getSession()
+	defer session.Close()
+
+	var results []MissingDSYM
+
+	c := session.DB(dataBase).C(dsymCollection)
+	err := c.Find(nil).All(&results)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, result := range results {
+		missingDSYMs.Store(result.UUID, result)
+	}
+}
+
+func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
+	if i, ok := missingDSYMs.Load(uuid); ok == true {
+		session := getSession()
+		defer session.Close()
+
+		c := session.DB(dataBase).C(dsymCollection)
+		err := c.Remove(bson.M{"uuid": uuid})
+		if err != nil {
+			fmt.Println(err)
+		}
+		missingDSYMs.Delete(uuid)
+		dsym := i.(MissingDSYM)
+		return &dsym, true
+	} else {
+		return nil, false
+	}
+}
+
+func GetAllMissingDSYMs () *[]MissingDSYM {
+	results := new([]MissingDSYM)
+
+	missingDSYMs.Range(func(k, v interface{}) bool {
+		*results = append(*results, v.(MissingDSYM))
+		return true
+	})
+
+	return results
+}

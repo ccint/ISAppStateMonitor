@@ -1,4 +1,5 @@
 import {getAllIssues, getIssueSession, getIssueDetails} from '../API/query'
+import {reSymbolicate} from "../API/resymbolicate"
 
 const state = () => {
   return {
@@ -22,13 +23,19 @@ const actions = {
       commit('setIssueDetail', {id, sessions: sessions || []})
     }
   },
-  async getSessionDetail ({ dispatch, commit, state }, {iid, sid}) {
-    await dispatch('getIssueDetail', {id: iid})
-    if (state.currentSession.id !== sid) {
+  async getSessionDetail ({ dispatch, commit, state }, {iid, sid, foreUpdate}) {
+    if (typeof iid !== 'undefined') {
+      await dispatch('getIssueDetail', {id: iid})
+    }
+    if (state.currentSession.id !== sid || foreUpdate === true) {
       commit('setCurrentSession', {idx: -1})
       let result = await getIssueSession(sid)
       commit('setCurrentSession', {sid, ...result.data})
     }
+  },
+  async reSymbolicate ({ dispatch, commit, state }, {sid}) {
+    await reSymbolicate(sid)
+    await dispatch('getSessionDetail', {sid, foreUpdate: true})
   }
 }
 
