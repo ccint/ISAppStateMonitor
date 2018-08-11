@@ -78,14 +78,12 @@ export default {
     .issueList {
         display: flex;
         flex-direction: column;
-        flex: 1 1 auto;
     }
     .listcontaner {
         background: white;
         border-radius: 10px;
         overflow: hidden;
-        max-width: 1500px;
-        min-width: 850px;
+        flex: 1 1 auto;
         .page-control {
             margin: 15px;
         }

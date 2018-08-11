@@ -20,7 +20,7 @@
                 {{`App Version ${currentSession.appVersion}`}}
             </div>
             <div style="font-style: italic">
-                {{`Runloop duration: ${Math.round(currentSession.duration * 100) / 100} ms `}}
+                {{`Runloop duration ${Math.round(currentSession.duration * 100) / 100} ms `}}
             </div>
         </div>
         <div class="stack-header">
@@ -124,8 +124,6 @@ export default {
         background: white;
         border-radius: 10px;
         overflow: hidden;
-        max-width: 1500px;
-        min-width: 850px;
         .navi {
             display: flex;
             flex-direction: column;

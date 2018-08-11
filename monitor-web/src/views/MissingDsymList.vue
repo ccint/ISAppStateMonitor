@@ -133,8 +133,6 @@ export default {
         background: white;
         border-radius: 10px;
         overflow: hidden;
-        max-width: 1500px;
-        min-width: 850px;
         .page-control {
             margin: 15px;
         }

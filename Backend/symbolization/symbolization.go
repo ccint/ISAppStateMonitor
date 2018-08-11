@@ -47,7 +47,13 @@ func openDB() {
 	opts.SetComparator(new(comparator))
 	opts.SetPrefixExtractor(gorocksdb.NewFixedPrefixTransform(44))
 
-	db, err := gorocksdb.OpenDb(opts, "./resource/dsym/")
+	dbPath := "./resource/dsym/"
+
+	if _, err := os.Stat(dbPath); err != nil && os.IsNotExist(err) {
+		os.MkdirAll(dbPath, 0755)
+	}
+
+	db, err := gorocksdb.OpenDb(opts, dbPath)
 	if err != nil {
 		log.Fatal(err)
 	} else {

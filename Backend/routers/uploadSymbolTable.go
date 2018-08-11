@@ -38,7 +38,14 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 		}
 		defer file.Close()
 		fileUUID := uuid.Must(uuid.NewV4()).String()
-		tmpFilePath := "./resource/tmp/" + fileUUID + ".zip"
+
+		tmpPath := "./resource/tmp/"
+
+		if _, err := os.Stat(tmpPath); err != nil && os.IsNotExist(err) {
+			os.MkdirAll(tmpPath, 0755)
+		}
+
+		tmpFilePath := tmpPath + fileUUID + ".zip"
 		f, err := os.OpenFile(tmpFilePath, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			fmt.Println(err)

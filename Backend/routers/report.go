@@ -11,6 +11,7 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"log"
 	"strings"
+	"os"
 )
 
 // Thread Pool
@@ -51,7 +52,13 @@ func openDB() {
 	opts.SetBlockBasedTableFactory(bbto)
 	opts.SetCreateIfMissing(true)
 
-	db, err := gorocksdb.OpenDb(opts, "./reportCache/dbCaches/")
+	dbPath := "./reportCache/dbCaches/"
+
+	if _, err := os.Stat(dbPath); err != nil && os.IsNotExist(err) {
+		os.MkdirAll(dbPath, 0755)
+	}
+
+	db, err := gorocksdb.OpenDb(opts, dbPath)
 	if err != nil {
 		log.Fatal(err)
 	} else {

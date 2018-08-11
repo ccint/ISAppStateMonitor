@@ -1,6 +1,6 @@
 <template>
     <div class="layout">
-        <Sider :style="{position: 'fixed', height: '100vh', left: 0, backgroundColor: 'rgb(8, 31, 40)'}">
+        <div class="navi-board">
             <div class="app-board">
                 <img src="./assets/icon-cc.png" class="app-icon"/>
                 <div class="app-info">
@@ -22,7 +22,7 @@
                     <span class="menu-item-text">{{item.name}}</span>
                 </div>
             </div>
-        </Sider>
+        </div>
         <div class="right-content">
             <div class="app-navi">
                 <div class="app-navi-item"
@@ -37,7 +37,7 @@
                     />
                 </div>
             </div>
-            <router-view/>
+            <router-view class="app-router-view"/>
         </div>
     </div>
 </template>
@@ -127,9 +127,16 @@ export default {
         font-size: 13px;
         font-weight: 400;
         background: rgb(16, 36, 49);
-        position: relative;
         border-radius: 4px;
         overflow: hidden;
+        position: relative;
+        .navi-board {
+            float: left;
+            height: 100vh;
+            width: 250px;
+            background: rgb(8, 31, 40);
+            position: fixed;
+        }
         .app-board {
             font-size: 16px;
             color: white;
@@ -171,15 +178,28 @@ export default {
             }
         }
         .right-content {
-            padding: 0 30px 30px 30px;
-            margin-left: 200px;
+            padding: 0 30px 0 30px;
+            margin-left: 250px;
+            width: calc(100% - 250px);
             overflow: scroll;
+            &::-webkit-scrollbar {
+                width: 0 !important;
+            }
+            .app-router-view {
+                max-width: 1500px;
+                width: 100%;
+                min-width: 850px;
+                margin: 0 auto 10px auto;
+            }
             .app-navi {
                 display: flex;
                 align-items: center;
-                margin: 30px 0;
+                margin: 30px auto 30px auto;
                 font-size: 20px;
                 font-weight: 400;
+                max-width: 1500px;
+                width: 100%;
+                min-width: 850px;
                 .app-navi-item {
                     color: rgb(168, 181, 191);
                     transition: color .2s ease-in-out;
