@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"../reportStore"
 	"encoding/json"
-	"fmt"
+	"../logger"
 )
 
 
@@ -14,7 +14,7 @@ func HanleReSymbolicate(w http.ResponseWriter, req *http.Request) {
 	report := reportStore.GetReportOfId(reportId)
 	report.Symbolicate()
 	if err := report.UpdateToStorage(); err != nil {
-		fmt.Println(err)
+		logger.Log.Error("update report failed: ", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

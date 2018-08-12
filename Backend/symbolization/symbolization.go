@@ -10,9 +10,10 @@ import (
 	"os"
 	"bufio"
 	"strconv"
-	"fmt"
 	"bytes"
 	"time"
+	"../logger"
+	"fmt"
 )
 
 var dysmDB *gorocksdb.DB
@@ -73,7 +74,7 @@ func InitSymbolization() {
 
 func ImportDSYMTable(filePath string) (string, error) {
 	timeNow := time.Now()
-	fmt.Println("start import symbols from: " + filePath)
+	logger.Log.Info("start import symbols from: " + filePath)
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -127,12 +128,13 @@ func ImportDSYMTable(filePath string) (string, error) {
 	writeErr := dysmDB.Write(wo, writeBatch)
 
 	if writeErr != nil {
-		fmt.Println(writeErr)
+		logger.Log.Error("writeBath Error: ", writeErr)
 		return "", writeErr
 	} else {
-		fmt.Printf("import %s succeed\n", filePath)
-		fmt.Printf("time cost: ")
-		fmt.Println(time.Since(timeNow))
+		logger.Log.Info(
+			fmt.Sprintf("import %s succeed, time cost: %s",
+				filePath,
+				time.Since(timeNow).String()))
 	}
 
 	return uuid, nil

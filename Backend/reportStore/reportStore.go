@@ -3,12 +3,12 @@ package reportStore
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"fmt"
 	"time"
 	"strings"
 	"errors"
 	"sync"
 	"../symbolization"
+	"../logger"
 )
 
 var (
@@ -128,7 +128,7 @@ func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
 	identifier, sourceFile := s.getIssueIdentifierAndSourceFile()
 
 	if identifier == nil {
-		fmt.Println("error: identifier is nil")
+		logger.Log.Error("identifier is nil")
 		return
 	}
 
@@ -299,7 +299,7 @@ func GetAllIssues(start int, pageSize int) (int, *[]Issue) {
 	err := c.Find(nil).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
 	count, err :=  c.Count()
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("find all issue failed. ", err)
 	}
 
 	return count, &results
@@ -314,7 +314,7 @@ func GetReportsOfIssue(issueId string) *[]string {
 	c := session.DB(dataBase).C(reportCollection)
 	err := c.Find(bson.M{"issue": bson.ObjectIdHex(issueId)}).Sort("-timestamp").All(&results)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("find reports of issue failed. ", err)
 	}
 
 	var resultIds [] string
@@ -333,7 +333,7 @@ func GetReportOfId(reportId string) AnrReport {
 	c := session.DB(dataBase).C(reportCollection)
 	err := c.FindId(bson.ObjectIdHex(reportId)).One(&result)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("find report failed. ", err)
 	}
 	return result
 }
@@ -347,7 +347,7 @@ func InitMissingDsym () {
 	c := session.DB(dataBase).C(dsymCollection)
 	err := c.Find(nil).All(&results)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("find missing dsyms failed. ", err)
 	}
 
 	for _, result := range results {
@@ -363,7 +363,7 @@ func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
 		c := session.DB(dataBase).C(dsymCollection)
 		err := c.Remove(bson.M{"uuid": uuid})
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.Error("remove missing dsym failed. ", err)
 		}
 		missingDSYMs.Delete(uuid)
 		dsym := i.(MissingDSYM)

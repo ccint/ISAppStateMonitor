@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"archive/zip"
 	"path/filepath"
-	"fmt"
 	"github.com/satori/go.uuid"
 	"sync"
 	"os/exec"
@@ -17,6 +16,7 @@ import (
 	"../reportStore"
 	"encoding/json"
 	"time"
+	"../logger"
 )
 
 func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
@@ -32,9 +32,9 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 		req.ParseMultipartForm(32 << 20)
 		file, _, err := req.FormFile("file")
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.Error("get upload file failed: ", err)
 			ret["msg"] = err.Error()
-			return
+			break
 		}
 		defer file.Close()
 		fileUUID := uuid.Must(uuid.NewV4()).String()
@@ -48,15 +48,15 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 		tmpFilePath := tmpPath + fileUUID + ".zip"
 		f, err := os.OpenFile(tmpFilePath, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.Error("open copy zip file failed: ", err)
 			ret["msg"] = err.Error()
-			return
+			break
 		}
 		defer f.Close()
 		if _, err = io.Copy(f, file); err != nil {
-			fmt.Println(err)
+			logger.Log.Error("copy zip file failed: ", err)
 			ret["msg"] = err.Error()
-			return
+			break
 		}
 
 		var result *[]map[string] string
@@ -81,7 +81,7 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 
 	now := time.Now()
-	fmt.Println("start handle dysm file")
+	logger.Log.Info("start handle dysm file")
 
 	destDir := "./resource/tmp/symbols/" + uuid
 
@@ -148,14 +148,14 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 	}
 
 	if err := os.RemoveAll(destDir); err != nil {
-		fmt.Println(err)
+		logger.Log.Error("clear symbol dir failed: ", err)
 	}
 
 	if err := os.Remove(filepath); err != nil {
-		fmt.Println(err)
+		logger.Log.Error("clear upload file failed: ", err)
 	}
 
-	fmt.Println("handle dysm succeed, total cost time " + time.Since(now).String())
+	logger.Log.Info("handle dysm finished, total cost time: ", time.Since(now))
 
 	return importResult
 }
@@ -164,22 +164,22 @@ func genST(fp string, isDir bool, group *sync.WaitGroup) {
 	defer group.Done()
 
 	fPabsolute, _ := filepath.Abs(fp)
-	tPabsolute, _ := filepath.Abs("./utils/symbolicate/buglySymboliOS.jar")
+	tPabsolute, _ := filepath.Abs("./libs/symbolicate/buglySymboliOS.jar")
 
 	cmd := exec.Command("java", "-jar", tPabsolute, "-i", fPabsolute)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		fmt.Println(err)
+		logger.Log.Error("generate symbol table failed: ", err)
 	}
 
 	if isDir {
 		if err := os.RemoveAll(fp); err != nil {
-			fmt.Println(err)
+			logger.Log.Error("remove dsym failed: ", err)
 		}
 	} else {
 		if err := os.Remove(fp); err != nil {
-			fmt.Println(err)
+			logger.Log.Error("remove dsym failed: ", err)
 		}
 	}
 }

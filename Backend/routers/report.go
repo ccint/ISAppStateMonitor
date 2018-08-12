@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
-	"fmt"
 	"time"
 	"../serialization"
 	"../reportStore"
@@ -12,6 +11,7 @@ import (
 	"log"
 	"strings"
 	"os"
+	"../logger"
 )
 
 // Thread Pool
@@ -91,7 +91,7 @@ func handleReport(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	payload := ResultStruct{0, "Hello Girl"}
+	payload := ResultStruct{0, ""}
 	json.NewEncoder(w).Encode(payload)
 	go cacheReport(&data)
 }
@@ -186,6 +186,5 @@ func archiveReport(report *[]byte) {
 			anrReport.SaveToStorage()
 		}
 	}
-	fmt.Printf("saveTime: ")
-	fmt.Println(time.Since(timeNow))
+	logger.Log.Info("saveTime: ", time.Since(timeNow))
 }

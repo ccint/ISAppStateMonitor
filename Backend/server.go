@@ -5,9 +5,11 @@ import (
 	"./routers"
 	"./symbolization"
 	"./reportStore"
+	"./logger"
 )
 
 func main() {
+	logger.Init()
 	routers.SetupReportHandler()
 	symbolization.InitSymbolization()
 	reportStore.InitMissingDsym()
