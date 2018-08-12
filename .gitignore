@@ -4,3 +4,4 @@ Backend/resource
 Backend/.idea
 monitor-web/.idea
 monitor-web/node_modules
+monitor-web/package-lock.json
