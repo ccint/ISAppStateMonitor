@@ -1,9 +1,9 @@
 ### environment
 ```
-CGO_CFLAGS="-I/usr/local/Cellar/rocksdb/5.12.4/include -Ipath/to/project_dir/libs/demangle/usr/local/include"
+CGO_CFLAGS="-Ipath/to/rocksdb/include -Ipath/to/project_dir/libs/demangle/usr/local/include"
 ```
 ```
-CGO_LDFLAGS="-L/usr/local/Cellar/rocksdb/5.12.4/lib -Lpath/to/project_dir/libs/demangle -lrocksdb -ldemangle -lstdc++ -lm -lz -lbz2 -lsnappy -llz4"
+CGO_LDFLAGS="-Lpath/to/rocksdb/lib -Lpath/to/project_dir/libs/demangle -lrocksdb -ldemangle -lstdc++ -lm -lz -lbz2 -lsnappy -llz4"
 ```
 ### dependency
 ```
