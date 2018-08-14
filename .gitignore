@@ -5,3 +5,8 @@ Backend/.idea
 monitor-web/.idea
 monitor-web/node_modules
 monitor-web/package-lock.json
+ANRDemo/Pods
+ANRDemo/Podfile.lock
+ANRDemo/ANRDemo.xcodeproj/project.xcworkspace/xcuserdata
+ANRDemo/ANRDemo.xcodeproj/xcuserdata
+ANRDemo/ANRDemo.xcworkspace/xcuserdata

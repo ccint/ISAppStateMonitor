@@ -1,0 +1,391 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		122AC4EB2122E7730012B579 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 122AC4EA2122E7730012B579 /* AppDelegate.m */; };
+		122AC4EE2122E7730012B579 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 122AC4ED2122E7730012B579 /* ViewController.m */; };
+		122AC4F12122E7730012B579 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 122AC4EF2122E7730012B579 /* Main.storyboard */; };
+		122AC4F32122E7730012B579 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 122AC4F22122E7730012B579 /* Assets.xcassets */; };
+		122AC4F62122E7730012B579 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 122AC4F42122E7730012B579 /* LaunchScreen.storyboard */; };
+		122AC4F92122E7730012B579 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 122AC4F82122E7730012B579 /* main.m */; };
+		AE507F50D8F34E7D83ACFAB3 /* libPods-ANRDemo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 75E0A59B03E7EAF1CB1A9FFF /* libPods-ANRDemo.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		122AC4E62122E7730012B579 /* ANRDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ANRDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		122AC4E92122E7730012B579 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		122AC4EA2122E7730012B579 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		122AC4EC2122E7730012B579 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		122AC4ED2122E7730012B579 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		122AC4F02122E7730012B579 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		122AC4F22122E7730012B579 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		122AC4F52122E7730012B579 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		122AC4F72122E7730012B579 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		122AC4F82122E7730012B579 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		5C1F2C04A70EA15D451F94A5 /* Pods-ANRDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ANRDemo.release.xcconfig"; path = "Pods/Target Support Files/Pods-ANRDemo/Pods-ANRDemo.release.xcconfig"; sourceTree = "<group>"; };
+		75E0A59B03E7EAF1CB1A9FFF /* libPods-ANRDemo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ANRDemo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F46EF593CB101251F61573F5 /* Pods-ANRDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ANRDemo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ANRDemo/Pods-ANRDemo.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		122AC4E32122E7730012B579 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AE507F50D8F34E7D83ACFAB3 /* libPods-ANRDemo.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		122AC4DD2122E7730012B579 = {
+			isa = PBXGroup;
+			children = (
+				122AC4E82122E7730012B579 /* ANRDemo */,
+				122AC4E72122E7730012B579 /* Products */,
+				AE3F90CADFE2523F2D5FA3E5 /* Pods */,
+				F36B26FB4117304456FD571C /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		122AC4E72122E7730012B579 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				122AC4E62122E7730012B579 /* ANRDemo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		122AC4E82122E7730012B579 /* ANRDemo */ = {
+			isa = PBXGroup;
+			children = (
+				122AC4E92122E7730012B579 /* AppDelegate.h */,
+				122AC4EA2122E7730012B579 /* AppDelegate.m */,
+				122AC4EC2122E7730012B579 /* ViewController.h */,
+				122AC4ED2122E7730012B579 /* ViewController.m */,
+				122AC4EF2122E7730012B579 /* Main.storyboard */,
+				122AC4F22122E7730012B579 /* Assets.xcassets */,
+				122AC4F42122E7730012B579 /* LaunchScreen.storyboard */,
+				122AC4F72122E7730012B579 /* Info.plist */,
+				122AC4F82122E7730012B579 /* main.m */,
+			);
+			path = ANRDemo;
+			sourceTree = "<group>";
+		};
+		AE3F90CADFE2523F2D5FA3E5 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				F46EF593CB101251F61573F5 /* Pods-ANRDemo.debug.xcconfig */,
+				5C1F2C04A70EA15D451F94A5 /* Pods-ANRDemo.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+		F36B26FB4117304456FD571C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				75E0A59B03E7EAF1CB1A9FFF /* libPods-ANRDemo.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		122AC4E52122E7730012B579 /* ANRDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 122AC4FC2122E7730012B579 /* Build configuration list for PBXNativeTarget "ANRDemo" */;
+			buildPhases = (
+				FF0AE98F05C02AA69F28FCC3 /* [CP] Check Pods Manifest.lock */,
+				122AC4E22122E7730012B579 /* Sources */,
+				122AC4E32122E7730012B579 /* Frameworks */,
+				122AC4E42122E7730012B579 /* Resources */,
+				122AC4FF2122E84F0012B579 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ANRDemo;
+			productName = ANRDemo;
+			productReference = 122AC4E62122E7730012B579 /* ANRDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		122AC4DE2122E7730012B579 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0920;
+				ORGANIZATIONNAME = sky;
+				TargetAttributes = {
+					122AC4E52122E7730012B579 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 122AC4E12122E7730012B579 /* Build configuration list for PBXProject "ANRDemo" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 122AC4DD2122E7730012B579;
+			productRefGroup = 122AC4E72122E7730012B579 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				122AC4E52122E7730012B579 /* ANRDemo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		122AC4E42122E7730012B579 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				122AC4F62122E7730012B579 /* LaunchScreen.storyboard in Resources */,
+				122AC4F32122E7730012B579 /* Assets.xcassets in Resources */,
+				122AC4F12122E7730012B579 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		122AC4FF2122E84F0012B579 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Debug模式编译是否上传，1＝上传 0＝不上传，默认不上传\nUPLOAD_DEBUG_SYMBOLS=1\n\n# 模拟器编译是否上传，1＝上传，0＝不上传，默认不上传\nUPLOAD_SIMULATOR_SYMBOLS=1\n\n# 退出执行并打印提示信息\nexitWithMessage() {\n    echo \"--------------------------------\"\n    echo -e \"${1}\"\n    echo \"--------------------------------\"\n    echo \"No upload and exit.\"\n    echo \"----------------------------------------------------------------\"\n    exit ${2}\n}\n\necho \"Uploading dSYM...\"\n\nDSYM_UPLOAD_DOMAIN=\"127.0.0.1:4001\"\n\n##检查模拟器是否允许上传符号\nif [ \"$EFFECTIVE_PLATFORM_NAME\" == \"-iphonesimulator\" ]; then\nif [[ $UPLOAD_SIMULATOR_SYMBOLS -eq 0 ]]; then\nexitWithMessage \"Warning: Build for simulator and skipping to upload. \\nYou can modify 'UPLOAD_SIMULATOR_SYMBOLS' to 1 in the script.\" 0\nfi\nfi\n\n# 检查DEBUG模式是否允许上传符号\nif [ \"${CONFIGURATION=}\" == \"Debug\" ]; then\nif [[ $UPLOAD_DEBUG_SYMBOLS -eq 0 ]]; then\nexitWithMessage \"Warning: Build for debug mode and skipping to upload. \\nYou can modify 'UPLOAD_DEBUG_SYMBOLS' to 1 in the script.\" 0\nfi\nfi\n\nfunction uploadDSYM {\n    DSYM_SRC=\"$1\"\n    if [ ! -d \"$DSYM_SRC\" ]; then\n    exitWithMessage \"dSYM source not found: ${DSYM_SRC}\" 1\n    fi\n    \n    # 清理\n    $(find ${BUILT_PRODUCTS_DIR} -name \"*.zip\" -mindepth 1 -delete)\n    FILENAME=`basename ${DSYM_SRC}`\n    DSYM_SYMBOL_OUT_ZIP_NAME=\"${FILENAME}.zip\"\n    DSYM_ZIP_FPATH=\"${BUILT_PRODUCTS_DIR}/${DSYM_SYMBOL_OUT_ZIP_NAME}\"\n    cd \"${BUILT_PRODUCTS_DIR}\";\n    PAD=`zip -r ${DSYM_SYMBOL_OUT_ZIP_NAME} ${FILENAME}`\n    \n    if [ ! -e \"${DSYM_ZIP_FPATH}\" ] ; then\n    exitWithMessage \"no dSYM zip archive generated: ${DSYM_ZIP_FPATH}\" 1\n    fi\n    \n    echo \"dSYM upload domain: ${DSYM_UPLOAD_DOMAIN}\"\n    DSYM_UPLOAD_URL=\"https://${DSYM_UPLOAD_DOMAIN}/upload_dsym?ignore_ret=1\"\n    \n    echo \"dSYM upload url: ${DSYM_UPLOAD_URL}\"\n    \n    echo \"curl -F \\\"file=@${DSYM_ZIP_FPATH};type=application/zip\\\" \\\"${DSYM_UPLOAD_URL}\\\" --verbose\"\n    \n    echo \"--------------------------------\"\n    STATUS=$(/usr/bin/curl -F \"file=@${DSYM_ZIP_FPATH};type=application/zip\" \"${DSYM_UPLOAD_URL}\" --verbose -k)\n    echo \"--------------------------------\"\n    \n    UPLOAD_RESULT=\"FAILTURE\"\n    echo \"server response: ${STATUS}\"\n    if [ ! \"${STATUS}\" ]; then\n    echo \"Error: Failed to upload the zip archive file.\"\n    elif [[ \"${STATUS}\" == *\"\\\"ret\\\":\\\"0\\\"\"* ]]; then\n    UPLOAD_RESULT=\"SUCCESS\"\n    else\n    echo \"Error: Failed to upload the zip archive file.\"\n    fi\n    \n    echo \"--------------------------------\"\n    echo \"${UPLOAD_RESULT} - dSYM upload complete.\"\n    \n    if [[ \"${UPLOAD_RESULT}\" == \"FAILTURE\" ]]; then\n    echo \"--------------------------------\"\n    echo \"Failed to upload the dSYM\"\n    echo \"Please try it again or upload mannually.\"\n    echo \"symbol file location: ${DSYM_ZIP_FPATH}\"\n    else\n    echo \"${DSYM_SYMBOL_OUT_ZIP_NAME}\" > $CHECKFILEPATH\n    echo \"Remove temporary zip archive: ${DSYM_ZIP_FPATH}\"\n    `rm -f ${DSYM_ZIP_FPATH}`\n    \n    if [ \"$?\" -ne 0 ]; then\n    exitWithMessage \"Error: Failed to remove temporary zip archive.\" 1\n    fi\n    fi\n    \n    echo \"-----------------------------------------------------------------\"\n}\n\n\n# .dSYM文件信息\necho \"DSYM FOLDER ${DWARF_DSYM_FOLDER_PATH}\"\n\nDSYM_FOLDER=\"${DWARF_DSYM_FOLDER_PATH}\"\n\nIFS=$'\\n'\n\nfor dsymFile in `find \"$DSYM_FOLDER\" -name \"${PRODUCT_NAME}.*.dSYM\"`; do\necho \"Found dSYM file: $dsymFile\"\nuploadDSYM $dsymFile\ndone\n";
+		};
+		FF0AE98F05C02AA69F28FCC3 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ANRDemo-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		122AC4E22122E7730012B579 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				122AC4EE2122E7730012B579 /* ViewController.m in Sources */,
+				122AC4F92122E7730012B579 /* main.m in Sources */,
+				122AC4EB2122E7730012B579 /* AppDelegate.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		122AC4EF2122E7730012B579 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				122AC4F02122E7730012B579 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		122AC4F42122E7730012B579 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				122AC4F52122E7730012B579 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		122AC4FA2122E7730012B579 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		122AC4FB2122E7730012B579 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		122AC4FD2122E7730012B579 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F46EF593CB101251F61573F5 /* Pods-ANRDemo.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TUYDV67BHD;
+				INFOPLIST_FILE = ANRDemo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.sky.ANRDemo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		122AC4FE2122E7730012B579 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5C1F2C04A70EA15D451F94A5 /* Pods-ANRDemo.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TUYDV67BHD;
+				INFOPLIST_FILE = ANRDemo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.sky.ANRDemo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		122AC4E12122E7730012B579 /* Build configuration list for PBXProject "ANRDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				122AC4FA2122E7730012B579 /* Debug */,
+				122AC4FB2122E7730012B579 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		122AC4FC2122E7730012B579 /* Build configuration list for PBXNativeTarget "ANRDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				122AC4FD2122E7730012B579 /* Debug */,
+				122AC4FE2122E7730012B579 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 122AC4DE2122E7730012B579 /* Project object */;
+}
