@@ -29,6 +29,10 @@ namespace ISBinaryImage {
     }
     
     bool ISBinaryImageInfo::containesAddress(uintptr_t address) {
+        if (address < this->baseAddress) {
+            return false;
+        }
+        
         for (auto it = this->segmentRanges.begin();
              it != this->segmentRanges.end();
              ++it) {

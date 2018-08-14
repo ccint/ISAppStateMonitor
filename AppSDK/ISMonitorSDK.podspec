@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name                   = "ISMonitorSDK"
-  s.version                = "0.0.2"
+  s.version                = "0.0.4"
   s.summary                = "ISMonitor platform App-SDK"
   s.homepage               = "http://gitlab.intsig.net/CCiOS/ISMonitorSDK"
   s.license                = "MIT"
