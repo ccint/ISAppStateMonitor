@@ -18,7 +18,10 @@ var (
 	reportCollection  =  	"anrReport"
 	issueCollection   =   	"issue"
 	dsymCollection    =     "dsym"
+	appCollection     =     "app"
 	missingDSYMs      =     sync.Map{}
+	issues            =     sync.Map{}
+	apps 			  =     sync.Map{}
 )
 
 type (
@@ -65,6 +68,7 @@ type (
 		IssueAffectVersionEnd   string
 		IssueCreateTime         float64
 		IssueLastUpdateTime     float64
+		AppId			        bson.ObjectId `bson:"_id"`
 	}
 
 	MissingDSYM struct {
@@ -75,6 +79,13 @@ type (
 		AppName			string
 		AppVersion 		string
 		SystemVersion	string
+		AppId			bson.ObjectId `bson:"_id"`
+	}
+
+	App struct {
+		Id				bson.ObjectId `bson:"_id"`
+		AppName			string
+		AppIdentifier   string
 	}
 )
 
@@ -107,11 +118,11 @@ func (s *AnrReport) SaveToStorage() error {
 	defer session.Close()
 
 	if isInBulk {
-		s.updateOrCreateNewIssue(session)
+		s.updateOrCreateNewIssueAndApp(session)
 		*reportBuffer = append(*reportBuffer, s)
 		return nil
 	} else {
-		s.updateOrCreateNewIssue(session)
+		s.updateOrCreateNewIssueAndApp(session)
 		c := session.DB(dataBase).C(reportCollection)
 		return c.Insert(s)
 	}
@@ -124,7 +135,7 @@ func (s *AnrReport)UpdateToStorage() error {
 	return c.UpdateId(s.ReportId, s)
 }
 
-func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
+func (s *AnrReport) updateOrCreateNewIssueAndApp(session *mgo.Session) {
 	identifier, sourceFile := s.getIssueIdentifierAndSourceFile()
 
 	if identifier == nil {
@@ -132,13 +143,23 @@ func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
 		return
 	}
 
-	ic := session.DB(dataBase).C(issueCollection)
-
-	issue := Issue{}
-
-	err := ic.Find(bson.M{"issueidentifier": identifier}).One(&issue)
 	var updateIssueErr error
-	if err != nil {
+	if issue, ok := getIssue(s.AppId, *identifier); ok == true {
+		// update exist issue
+		ic := session.DB(dataBase).C(issueCollection)
+		change := bson.M{"issuelastupdatetime": float64(time.Now().Unix() * 1000),
+			"issuecount": issue.IssueCount + 1}
+
+		if s.AppVersion < issue.IssueAffectVersionStart {
+			change["issueaffectversionstart"] = s.AppVersion
+		}
+
+		if s.AppVersion > issue.IssueAffectVersionEnd {
+			change["issueaffectversionend"] = s.AppVersion
+		}
+		addIssueToCache(issue)
+		updateIssueErr = ic.UpdateId(issue.IssueId, bson.M{"$set": change})
+	} else {
 		// issue not exist
 		issue.Init()
 		issue.IssueIdentifier = *identifier
@@ -148,20 +169,8 @@ func (s *AnrReport) updateOrCreateNewIssue(session *mgo.Session) {
 		issue.IssueAffectVersionStart = s.AppVersion
 		issue.IssueAffectVersionEnd = s.AppVersion
 		issue.IssueLastUpdateTime = issue.IssueCreateTime
-		updateIssueErr = ic.Insert(&issue)
-	} else {
-		// update exist issue
-		change := bson.M{"issuelastupdatetime": float64(time.Now().Unix() * 1000),
-			             "issuecount": issue.IssueCount + 1}
-
-		if s.AppVersion < issue.IssueAffectVersionStart {
-			change["issueaffectversionstart"] = s.AppVersion
-		}
-
-		if s.AppVersion > issue.IssueAffectVersionEnd {
-			change["issueaffectversionend"] = s.AppVersion
-		}
-		updateIssueErr = ic.UpdateId(issue.IssueId, bson.M{"$set": change})
+		issue.AppId = bson.ObjectIdHex(s.AppId)
+		updateIssueErr = issue.SaveToStorage(session)
 	}
 
 	if updateIssueErr == nil {
@@ -289,20 +298,35 @@ func (s *MissingDSYM) SaveToStorage() error {
 	return err
 }
 
-func GetAllIssues(start int, pageSize int) (int, *[]Issue) {
+func (s *App) Init() {
+	s.Id = bson.NewObjectId()
+}
+
+func (s *App) SaveToStorage() error {
+	if len(s.AppIdentifier) <= 0 {
+		return errors.New("AppIdentifier is Invalid")
+	}
+
+	if len(s.AppName) <= 0 {
+		return errors.New("AppName is Invalid")
+	}
+
+	if _, ok := missingDSYMs.Load(s.AppIdentifier); ok == true {
+		return nil
+	}
+
 	session := getSession()
 	defer session.Close()
 
-	var results []Issue
+	c := session.DB(dataBase).C(appCollection)
 
-	c := session.DB(dataBase).C(issueCollection)
-	err := c.Find(nil).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
-	count, err :=  c.Count()
-	if err != nil {
-		logger.Log.Error("find all issue failed. ", err)
+	err := c.Insert(s)
+
+	if err == nil {
+		apps.Store(s.AppIdentifier, *s)
 	}
 
-	return count, &results
+	return err
 }
 
 func GetReportsOfIssue(issueId string) *[]string {
@@ -324,7 +348,7 @@ func GetReportsOfIssue(issueId string) *[]string {
 	return &resultIds
 }
 
-func GetReportOfId(reportId string) AnrReport {
+func GetReportOfId (reportId string) AnrReport {
 	session := getSession()
 	defer session.Close()
 
@@ -338,7 +362,13 @@ func GetReportOfId(reportId string) AnrReport {
 	return result
 }
 
-func InitMissingDsym () {
+func InitCacheData () {
+	initApp()
+	initIssues()
+	initMissingDsym()
+}
+
+func initMissingDsym () {
 	session := getSession()
 	defer session.Close()
 
@@ -382,4 +412,106 @@ func GetAllMissingDSYMs () *[]MissingDSYM {
 	})
 
 	return results
+}
+
+func initApp () {
+	session := getSession()
+	defer session.Close()
+
+	var results []App
+
+	c := session.DB(dataBase).C(appCollection)
+	err := c.Find(nil).All(&results)
+	if err != nil {
+		logger.Log.Error("find app failed. ", err)
+	}
+
+	for _, result := range results {
+		apps.Store(result.AppIdentifier, result)
+	}
+}
+
+func GetAllApps () *[]App {
+	results := new([]App)
+
+	apps.Range(func(k, v interface{}) bool {
+		*results = append(*results, v.(App))
+		return true
+	})
+
+	return results
+}
+
+func initIssues () {
+	session := getSession()
+	defer session.Close()
+
+	var results []Issue
+
+	c := session.DB(dataBase).C(issueCollection)
+	err := c.Find(nil).All(&results)
+	if err != nil {
+		logger.Log.Error("find issues failed. ", err)
+	}
+
+	for _, result := range results {
+		addIssueToCache(&result)
+	}
+}
+
+func addIssueToCache(issue *Issue) {
+	var issueMap sync.Map
+	appId := issue.AppId.Hex()
+	if v, ok := issues.Load(appId); ok == true {
+		issueMap = v.(sync.Map)
+	} else {
+		issueMap = sync.Map{}
+		issues.Store(appId, issueMap)
+	}
+	issueMap.Store(issue.IssueIdentifier, *issue)
+}
+
+func getIssue(appId string, issueIdentifier string) (*Issue, bool) {
+	if v, ok := issues.Load(appId); ok == true {
+		issueMap := v.(sync.Map)
+		if v2, ok = issueMap.Load(issueIdentifier); ok == true {
+			issue := v2.(Issue)
+			return &issue, ok
+		}
+	}
+	return nil, false
+}
+
+func (s *Issue) SaveToStorage(inSession *mgo.Session) error {
+	session := inSession
+	if session == nil {
+		session = getSession()
+		defer session.Close()
+	}
+
+	ic := session.DB(dataBase).C(issueCollection)
+
+	var err error
+
+	if err = ic.Insert(s); err == nil {
+		addIssueToCache(s)
+	}
+
+	return err
+}
+
+func GetAllIssues(start int, pageSize int, appId string) (int, *[]Issue) {
+	session := getSession()
+	defer session.Close()
+
+	var results []Issue
+
+	c := session.DB(dataBase).C(issueCollection)
+	err := c.Find(bson.M{"appid": bson.ObjectIdHex(appId)}).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
+	count, err :=  c.Count()
+	if err != nil {
+		logger.Log.Error("find all issue failed. ", err)
+	}
+
+	return count, &results
 }

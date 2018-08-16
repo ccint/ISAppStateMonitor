@@ -12,10 +12,11 @@ func main() {
 	logger.Init()
 	routers.SetupReportHandler()
 	symbolization.InitSymbolization()
-	reportStore.InitMissingDsym()
+	reportStore.InitCacheData()
 
 	http.HandleFunc("/report", routers.ReportHandler)
 	http.HandleFunc("/upload_dsym", routers.UploadDsymHandler)
+	http.HandleFunc("/allApp", routers.GetAllApp)
 	http.HandleFunc("/query_issues", routers.HandleQueryIssues)
 	http.HandleFunc("/issue_detail", routers.GetAllReportsOfIssue)
 	http.HandleFunc("/issue_session", routers.GetReportDetail)

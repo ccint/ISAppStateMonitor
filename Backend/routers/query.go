@@ -8,6 +8,16 @@ import (
 	"../reportStore"
 )
 
+func GetAllApp (w http.ResponseWriter, req *http.Request) {
+	results := reportStore.GetAllApps()
+
+	ret := map[string] interface{} {"count": len(*results), "data": *results}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(ret)
+}
+
 func GetAllMissingDYSM (w http.ResponseWriter, req *http.Request) {
 	results := reportStore.GetAllMissingDSYMs()
 
@@ -77,8 +87,9 @@ func GetReportDetail(w http.ResponseWriter, req *http.Request) {
 func getAllIssues(w http.ResponseWriter, req *http.Request) {
 	start, _ := strconv.ParseInt(req.URL.Query().Get("start"), 10, 64)
 	pageSize, _ :=  strconv.ParseInt(req.URL.Query().Get("pageSize"), 10, 64)
+	appId := req.URL.Query().Get("appId")
 
-	totalCount, issues := reportStore.GetAllIssues(int(start), int(pageSize))
+	totalCount, issues := reportStore.GetAllIssues(int(start), int(pageSize), appId)
 
 	ret := make(map[string] interface{})
 
