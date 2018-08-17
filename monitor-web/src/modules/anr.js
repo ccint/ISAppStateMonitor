@@ -1,18 +1,24 @@
-import {getAllIssues, getIssueSession, getIssueDetails} from '../API/query'
-import {reSymbolicate} from "../API/resymbolicate"
+import {getAllIssues, getIssueSession, getIssueDetails, getApps} from '../API/query'
+import {reSymbolicate} from '../API/resymbolicate'
 
 const state = () => {
   return {
     issueList: {total: 0, issues: []},
     currentIssuePage: 1,
     issueDetail: {id: '', sessions: []},
-    currentSession: {idx: -1, id: ''}
+    currentSession: {idx: -1, id: ''},
+    selectedAppIdx: 0,
+    apps: [{}]
   }
 }
 
 const actions = {
-  async getIssueList ({ commit }, {start, pageSize}) {
-    let result = await getAllIssues(start, pageSize)
+  async getApps ({ commit }) {
+    let result = await getApps()
+    commit('setApps', result.data.data || [])
+  },
+  async getIssueList ({ commit }, {start, pageSize, appId}) {
+    let result = await getAllIssues(start, pageSize, appId)
     commit('setIssueList', {total: result.data.total || 0, issues: result.data.issues || []})
   },
   async getIssueDetail ({ commit, state }, {id}) {
@@ -52,6 +58,15 @@ const mutations = {
   },
   setCurrentIssuePage (state, data) {
     state.currentIssuePage = data
+  },
+  setSelectedAppIdx (state, data) {
+    state.selectedAppIdx = data
+    state.issueList = {total: 0, issues: []}
+    state.issueList = {id: '', sessions: []}
+    state.issueList = {idx: -1, id: ''}
+  },
+  setApps (state, data) {
+    state.apps = data
   }
 }
 

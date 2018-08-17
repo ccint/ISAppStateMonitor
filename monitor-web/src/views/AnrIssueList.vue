@@ -44,7 +44,8 @@ export default {
       issues: state => state.issueList.issues,
       issueDetail: state => state.issueDetail,
       currentPage: state => state.currentIssuePage,
-      totalIssues: state => state.issueList.total
+      totalIssues: state => state.issueList.total,
+      selectedApp: state => state.apps[state.selectedAppIdx] || {}
     })
   },
   methods: {
@@ -55,21 +56,27 @@ export default {
       let id = issue.id
       this.getIssueDetail({id}).then(() => {
         let sid = this.issueDetail.sessions[0]
-        this.$router.push(`/anr/issue_detail/${id}/session/${sid}`)
+        this.$router.push(`/app/${this.selectedApp.appIdentifier}/anr/issue_detail/${id}/session/${sid}`)
       })
     },
     onPageChange (page) {
       this.setCurrentIssuePage(page)
       this.loadIssues()
     },
-    loadIssues () {
+    loadIssues (appId) {
       let start = (this.currentPage - 1) * this.pageSize
       let pageSize = this.pageSize
-      this.getIssueList({start, pageSize})
+      this.getIssueList({start, pageSize, appId})
     }
   },
   beforeMount () {
-    this.loadIssues()
+    this.loadIssues(this.$route.params.aid)
+  },
+  beforeRouteUpdate (to, from, next) {
+    if (to.name === from.name) { // 手动刷新数据
+      this.loadIssues(to.params.aid)
+    }
+    next()
   }
 }
 </script>

@@ -28,7 +28,6 @@
             <label class="resymbol-label"
                    @click="tryReSymbolicate"
             >
-                <font-awesome-icon icon="faSync" style="margin-right: 3px"/>
                 Re-Symbolicate
             </label>
         </div>
@@ -54,7 +53,8 @@ export default {
     ...mapState('anr', {
       issueDetail: state => state.issueDetail,
       currentSession: state => state.currentSession,
-      sessionCount: state => state.issueDetail.sessions.length
+      sessionCount: state => state.issueDetail.sessions.length,
+      selectedApp: state => state.apps[state.selectedAppIdx] || {}
     }),
     hasNext () {
       return this.currentSession.idx < this.sessionCount - 1 && this.currentSession.idx >= 0
@@ -95,7 +95,7 @@ export default {
       if ((isPrev && this.hasPrev) || (!isPrev && this.hasNext)) {
         let nextIdx = isPrev ? this.currentSession.idx - 1 : this.currentSession.idx + 1
         let nextId = this.issueDetail.sessions[nextIdx]
-        this.$router.push(`/anr/issue_detail/${this.$route.params.iid}/session/${nextId}`)
+        this.$router.push(`/app/${this.selectedApp.appIdentifier}/anr/issue_detail/${this.$route.params.iid}/session/${nextId}`)
       }
     },
     tryReSymbolicate () {

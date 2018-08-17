@@ -5,10 +5,10 @@ import store from './store'
 import iView from 'iview'
 import 'iview/dist/styles/iview.css'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import {faCaretRight, faCaretLeft, faCloudUploadAlt, faAngleRight, faBan, faSync} from '@fortawesome/free-solid-svg-icons'
+import {faCaretRight, faCaretLeft, faCloudUploadAlt, faAngleRight, faBan} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faCaretRight, faCaretLeft, faBan, faAngleRight, faCloudUploadAlt, faSync)
+library.add(faCaretRight, faCaretLeft, faBan, faAngleRight, faCloudUploadAlt)
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 Vue.use(iView)

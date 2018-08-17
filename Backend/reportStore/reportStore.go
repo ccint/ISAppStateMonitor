@@ -9,6 +9,7 @@ import (
 	"sync"
 	"../symbolization"
 	"../logger"
+	"fmt"
 )
 
 var (
@@ -19,9 +20,9 @@ var (
 	issueCollection   =   	"issue"
 	dsymCollection    =     "dsym"
 	appCollection     =     "app"
-	missingDSYMs      =     sync.Map{}
-	issues            =     sync.Map{}
-	apps 			  =     sync.Map{}
+	missingDSYMs      =     Cache{make(map[string] interface{}), sync.RWMutex{}}
+	issues            =     Cache{make(map[string] interface{}), sync.RWMutex{}}
+	apps 			  =     Cache{make(map[string] interface{}), sync.RWMutex{}}
 )
 
 type (
@@ -68,7 +69,7 @@ type (
 		IssueAffectVersionEnd   string
 		IssueCreateTime         float64
 		IssueLastUpdateTime     float64
-		AppId			        bson.ObjectId `bson:"_id"`
+		AppIdentifier			string
 	}
 
 	MissingDSYM struct {
@@ -77,15 +78,20 @@ type (
 		UUID			string
 		Arch			string
 		AppName			string
+		AppIdentifier   string
 		AppVersion 		string
 		SystemVersion	string
-		AppId			bson.ObjectId `bson:"_id"`
 	}
 
 	App struct {
 		Id				bson.ObjectId `bson:"_id"`
 		AppName			string
 		AppIdentifier   string
+	}
+
+	Cache struct {
+		data   map[string] interface{}
+		mutex  sync.RWMutex
 	}
 )
 
@@ -143,35 +149,22 @@ func (s *AnrReport) updateOrCreateNewIssueAndApp(session *mgo.Session) {
 		return
 	}
 
-	var updateIssueErr error
-	if issue, ok := getIssue(s.AppId, *identifier); ok == true {
-		// update exist issue
-		ic := session.DB(dataBase).C(issueCollection)
-		change := bson.M{"issuelastupdatetime": float64(time.Now().Unix() * 1000),
-			"issuecount": issue.IssueCount + 1}
+	app := App{}
+	app.Init()
+	app.AppName = s.Backtrace.AppImageName
+	app.AppIdentifier = s.AppId
+	app.SaveToStorage()
 
-		if s.AppVersion < issue.IssueAffectVersionStart {
-			change["issueaffectversionstart"] = s.AppVersion
-		}
-
-		if s.AppVersion > issue.IssueAffectVersionEnd {
-			change["issueaffectversionend"] = s.AppVersion
-		}
-		addIssueToCache(issue)
-		updateIssueErr = ic.UpdateId(issue.IssueId, bson.M{"$set": change})
-	} else {
-		// issue not exist
-		issue.Init()
-		issue.IssueIdentifier = *identifier
-		issue.IssueSourceFile = *sourceFile
-		issue.IssueCreateTime = float64(time.Now().Unix() * 1000)
-		issue.IssueCount = 1
-		issue.IssueAffectVersionStart = s.AppVersion
-		issue.IssueAffectVersionEnd = s.AppVersion
-		issue.IssueLastUpdateTime = issue.IssueCreateTime
-		issue.AppId = bson.ObjectIdHex(s.AppId)
-		updateIssueErr = issue.SaveToStorage(session)
-	}
+	issue := Issue{}
+	issue.IssueIdentifier = *identifier
+	issue.IssueSourceFile = *sourceFile
+	issue.IssueCreateTime = float64(time.Now().Unix() * 1000)
+	issue.IssueCount = 1
+	issue.IssueAffectVersionStart = s.AppVersion
+	issue.IssueAffectVersionEnd = s.AppVersion
+	issue.IssueLastUpdateTime = issue.IssueCreateTime
+	issue.AppIdentifier = s.AppId
+	updateIssueErr := issue.SaveToStorage(session)
 
 	if updateIssueErr == nil {
 		s.Issue = issue.IssueId
@@ -229,6 +222,7 @@ func (s *AnrReport)Symbolicate() {
 					missingDsym.Arch = s.Arch
 					missingDsym.AppVersion = s.AppVersion
 					missingDsym.AppName = bs.AppImageName
+					missingDsym.AppIdentifier = s.AppId
 					missingDsym.SystemVersion = s.SysVersion
 					missingDsym.SaveToStorage()
 				} else {
@@ -271,6 +265,50 @@ func (s *Issue) Init() {
 	s.IssueId = bson.NewObjectId()
 }
 
+func (s *Issue) SaveToStorage(inSession *mgo.Session) error {
+	session := inSession
+	if session == nil {
+		session = getSession()
+		defer session.Close()
+	}
+
+	issues.mutex.Lock()
+	defer issues.mutex.Unlock()
+
+	ic := session.DB(dataBase).C(issueCollection)
+
+	var updateErr error
+
+	if oldIssue, ok := getIssue(s.AppIdentifier, s.IssueIdentifier, true); ok == true {
+		change := bson.M{"issuelastupdatetime": float64(time.Now().Unix() * 1000),
+			"issuecount": oldIssue.IssueCount + 1}
+		s.IssueCount = oldIssue.IssueCount + 1
+		s.IssueId = oldIssue.IssueId
+
+		if s.IssueAffectVersionStart < oldIssue.IssueAffectVersionStart {
+			change["issueaffectversionstart"] = s.IssueAffectVersionStart
+		} else {
+			s.IssueAffectVersionStart = oldIssue.IssueAffectVersionStart
+		}
+
+		if s.IssueAffectVersionEnd > oldIssue.IssueAffectVersionEnd {
+			change["issueaffectversionend"] = s.IssueAffectVersionEnd
+		} else {
+			s.IssueAffectVersionEnd = oldIssue.IssueAffectVersionEnd
+		}
+		updateErr = ic.UpdateId(oldIssue.IssueId, bson.M{"$set": change})
+	} else {
+		s.Init()
+		updateErr = ic.Insert(s)
+	}
+
+	if updateErr == nil {
+		addIssueToCache(s, true)
+	}
+
+	return updateErr
+}
+
 func (s *MissingDSYM) Init() {
 	s.Id = bson.NewObjectId()
 }
@@ -280,7 +318,10 @@ func (s *MissingDSYM) SaveToStorage() error {
 		return errors.New("UUID is Invalid")
 	}
 
-	if _, ok := missingDSYMs.Load(s.UUID); ok == true {
+	missingDSYMs.mutex.Lock()
+	defer missingDSYMs.mutex.Unlock()
+
+	if _, ok := missingDSYMs.data[s.UUID]; ok == true {
 		return nil
 	}
 
@@ -292,7 +333,7 @@ func (s *MissingDSYM) SaveToStorage() error {
 	err := c.Insert(s)
 
 	if err == nil {
-		missingDSYMs.Store(s.UUID, *s)
+		missingDSYMs.data[s.UUID] = *s
 	}
 
 	return err
@@ -311,7 +352,10 @@ func (s *App) SaveToStorage() error {
 		return errors.New("AppName is Invalid")
 	}
 
-	if _, ok := missingDSYMs.Load(s.AppIdentifier); ok == true {
+	apps.mutex.Lock()
+	defer apps.mutex.Unlock()
+
+	if _, ok := apps.data[s.AppIdentifier]; ok == true {
 		return nil
 	}
 
@@ -323,7 +367,7 @@ func (s *App) SaveToStorage() error {
 	err := c.Insert(s)
 
 	if err == nil {
-		apps.Store(s.AppIdentifier, *s)
+		apps.data[s.AppIdentifier] = *s
 	}
 
 	return err
@@ -381,12 +425,15 @@ func initMissingDsym () {
 	}
 
 	for _, result := range results {
-		missingDSYMs.Store(result.UUID, result)
+		missingDSYMs.data[result.UUID] = result
 	}
 }
 
 func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
-	if i, ok := missingDSYMs.Load(uuid); ok == true {
+	missingDSYMs.mutex.Lock()
+	defer missingDSYMs.mutex.Unlock()
+
+	if i, ok := missingDSYMs.data[uuid]; ok == true {
 		session := getSession()
 		defer session.Close()
 
@@ -394,8 +441,9 @@ func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
 		err := c.Remove(bson.M{"uuid": uuid})
 		if err != nil {
 			logger.Log.Error("remove missing dsym failed. ", err)
+			return nil, false
 		}
-		missingDSYMs.Delete(uuid)
+		delete(missingDSYMs.data, uuid)
 		dsym := i.(MissingDSYM)
 		return &dsym, true
 	} else {
@@ -403,13 +451,22 @@ func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
 	}
 }
 
-func GetAllMissingDSYMs () *[]MissingDSYM {
+func GetAllMissingDSYMs (appId string) *[]MissingDSYM {
+	if len(appId) <= 0 {
+		return nil
+	}
+
 	results := new([]MissingDSYM)
 
-	missingDSYMs.Range(func(k, v interface{}) bool {
-		*results = append(*results, v.(MissingDSYM))
-		return true
-	})
+	missingDSYMs.mutex.RLock()
+	defer missingDSYMs.mutex.RUnlock()
+
+	for _, v := range missingDSYMs.data {
+		dsym := v.(MissingDSYM)
+		if dsym.AppIdentifier == appId {
+			*results = append(*results, dsym)
+		}
+	}
 
 	return results
 }
@@ -427,17 +484,19 @@ func initApp () {
 	}
 
 	for _, result := range results {
-		apps.Store(result.AppIdentifier, result)
+		apps.data[result.AppIdentifier] = result
 	}
 }
 
 func GetAllApps () *[]App {
 	results := new([]App)
 
-	apps.Range(func(k, v interface{}) bool {
-		*results = append(*results, v.(App))
-		return true
-	})
+	apps.mutex.RLock()
+	defer apps.mutex.RUnlock()
+
+	for _, app := range apps.data {
+		*results = append(*results, app.(App))
+	}
 
 	return results
 }
@@ -455,63 +514,64 @@ func initIssues () {
 	}
 
 	for _, result := range results {
-		addIssueToCache(&result)
+		addIssueToCache(&result, true)
 	}
 }
 
-func addIssueToCache(issue *Issue) {
-	var issueMap sync.Map
-	appId := issue.AppId.Hex()
-	if v, ok := issues.Load(appId); ok == true {
-		issueMap = v.(sync.Map)
+func addIssueToCache(issue *Issue, lockFree bool) {
+	var issueMap map[string] Issue
+	if lockFree == false {
+		issues.mutex.Lock()
+		defer issues.mutex.Unlock()
+	}
+
+	if v, ok := issues.data[issue.AppIdentifier]; ok == true {
+		issueMap = v.(map[string] Issue)
 	} else {
-		issueMap = sync.Map{}
-		issues.Store(appId, issueMap)
+		issueMap = make(map[string] Issue)
+		issues.data[issue.AppIdentifier] = issueMap
 	}
-	issueMap.Store(issue.IssueIdentifier, *issue)
+	issueMap[issue.IssueIdentifier] = *issue
 }
 
-func getIssue(appId string, issueIdentifier string) (*Issue, bool) {
-	if v, ok := issues.Load(appId); ok == true {
-		issueMap := v.(sync.Map)
-		if v2, ok = issueMap.Load(issueIdentifier); ok == true {
-			issue := v2.(Issue)
-			return &issue, ok
+func getIssue(appIdentifier string, issueIdentifier string, lockFree bool) (*Issue, bool) {
+	if lockFree == false {
+		issues.mutex.RLock()
+		defer issues.mutex.RUnlock()
+	}
+
+	if v, ok := issues.data[appIdentifier]; ok == true {
+		issueMap := v.(map[string] Issue)
+		i, ok := issueMap[issueIdentifier]
+		if ok == true {
+			return &i, ok
 		}
 	}
 	return nil, false
 }
 
-func (s *Issue) SaveToStorage(inSession *mgo.Session) error {
-	session := inSession
-	if session == nil {
-		session = getSession()
-		defer session.Close()
-	}
-
-	ic := session.DB(dataBase).C(issueCollection)
-
-	var err error
-
-	if err = ic.Insert(s); err == nil {
-		addIssueToCache(s)
-	}
-
-	return err
-}
-
 func GetAllIssues(start int, pageSize int, appId string) (int, *[]Issue) {
+	results := new([]Issue)
+
 	session := getSession()
 	defer session.Close()
 
-	var results []Issue
-
 	c := session.DB(dataBase).C(issueCollection)
-	err := c.Find(bson.M{"appid": bson.ObjectIdHex(appId)}).Sort("-issuecount").Skip(start).Limit(pageSize).All(&results)
-	count, err :=  c.Count()
-	if err != nil {
-		logger.Log.Error("find all issue failed. ", err)
+	if err := c.Find(bson.M{"appidentifier": appId}).Sort("-issuecount").Skip(start).Limit(pageSize).All(results); err != nil {
+		logger.Log.Error(fmt.Sprintf("find all issue for app %s failed. ", appId), err)
 	}
 
-	return count, &results
+	issues.mutex.RLock()
+	defer issues.mutex.RUnlock()
+
+	count := 0
+
+	if v, ok := issues.data[appId]; ok == true {
+		issueMap := v.(map[string] Issue)
+		count = len(issueMap)
+	} else {
+		logger.Log.Error(fmt.Sprintf("issues cache for app %s cannot find.", appId))
+	}
+
+	return count, results
 }

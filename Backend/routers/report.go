@@ -183,7 +183,9 @@ func archiveReport(report *[]byte) {
 			backtrace.Stacks = *stacks
 			anrReport.Backtrace = backtrace
 			anrReport.Symbolicate()
-			anrReport.SaveToStorage()
+			if err := anrReport.SaveToStorage(); err != nil {
+				logger.Log.Error("save Report Failed: ", anrReport)
+			}
 		}
 	}
 	logger.Log.Info("saveTime: ", time.Since(timeNow))

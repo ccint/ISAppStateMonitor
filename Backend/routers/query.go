@@ -11,7 +11,15 @@ import (
 func GetAllApp (w http.ResponseWriter, req *http.Request) {
 	results := reportStore.GetAllApps()
 
-	ret := map[string] interface{} {"count": len(*results), "data": *results}
+	retApps := new([]map[string] string)
+	for _, result := range *results {
+		retApp := make(map[string] string)
+		retApp["appName"] = result.AppName
+		retApp["appIdentifier"] = result.AppIdentifier
+		*retApps = append(*retApps, retApp)
+	}
+
+	ret := map[string] interface{} {"count": len(*results), "data": *retApps}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -19,7 +27,8 @@ func GetAllApp (w http.ResponseWriter, req *http.Request) {
 }
 
 func GetAllMissingDYSM (w http.ResponseWriter, req *http.Request) {
-	results := reportStore.GetAllMissingDSYMs()
+	appId := req.URL.Query().Get("appId")
+	results := reportStore.GetAllMissingDSYMs(appId)
 
 	ret := map[string] interface{} {"count": len(*results), "data": *results}
 

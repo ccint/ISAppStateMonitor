@@ -102,7 +102,7 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 
 		for _, f := range files {
 			var fPath = destDir + "/" + f.Name()
-			go genST(fPath, f.IsDir(), &sg)
+			genST(fPath, f.IsDir(), &sg)
 		}
 
 		sg.Wait()
@@ -147,9 +147,9 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 		sg.Wait()
 	}
 
-	if err := os.RemoveAll(destDir); err != nil {
-		logger.Log.Error("clear symbol dir failed: ", err)
-	}
+	//if err := os.RemoveAll(destDir); err != nil {
+	//	logger.Log.Error("clear symbol dir failed: ", err)
+	//}
 
 	if err := os.Remove(filepath); err != nil {
 		logger.Log.Error("clear upload file failed: ", err)
@@ -161,7 +161,9 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 }
 
 func genST(fp string, isDir bool, group *sync.WaitGroup) {
-	defer group.Done()
+	if group != nil {
+		defer group.Done()
+	}
 
 	fPabsolute, _ := filepath.Abs(fp)
 	tPabsolute, _ := filepath.Abs("./libs/symbolicate/buglySymboliOS.jar")

@@ -1,14 +1,23 @@
 <template>
     <div class="layout">
+        <Modal  v-model="displayAppSelectModal"  width="200" title="选择App">
+            <RadioGroup :value="selectedAppIdx" @input="selectedAppChanged" vertical>
+                <Radio v-for="(app, idx) in apps" :label="idx" :key="app.appIdentifier">
+                    <span>{{app.appName}}</span>
+                </Radio>
+            </RadioGroup>
+            <div slot="footer">
+            </div>
+        </Modal>
         <div class="navi-board">
-            <div class="app-board">
+            <div class="app-board" @click="appBoardClicked">
                 <img src="./assets/icon-cc.png" class="app-icon"/>
                 <div class="app-info">
                     <div class="app-name ellipsis">
-                        名片全能王
+                        {{selectedApp.appName}}
                     </div>
                     <div class="app-id ellipsis">
-                        com.intsig.camcard.lite
+                        {{selectedApp.appIdentifier}}
                     </div>
                 </div>
             </div>
@@ -43,13 +52,16 @@
 </template>
 
 <script>
+import { mapMutations, mapState, mapActions } from 'vuex'
+
 export default {
   name: 'app',
   data () {
     return {
       navis: [],
       menuItems: [],
-      selectedItemIdx: -1
+      selectedItemIdx: -1,
+      displayAppSelectModal: false
     }
   },
   watch: {
@@ -61,11 +73,18 @@ export default {
     }
   },
   computed: {
+    ...mapState('anr', {
+      selectedAppIdx: state => state.selectedAppIdx,
+      selectedApp: state => state.apps[state.selectedAppIdx] || {},
+      apps: state => state.apps
+    }),
     routePath () {
       return this.$route.path
     }
   },
   methods: {
+    ...mapMutations('anr', ['setSelectedAppIdx']),
+    ...mapActions('anr', ['getApps']),
     naviClicked (idx) {
       let navi = this.navis[idx]
       let path = navi.to
@@ -73,7 +92,10 @@ export default {
         this.$router.push(path)
       }
     },
-    menuItemClicked (idx) {
+    menuItemClicked (idx, forceRefresh) {
+      if (idx === this.selectedItemIdx && !forceRefresh) {
+        return
+      }
       let item = this.menuItems[idx]
       let path = item.to
       if (typeof path !== 'undefined') {
@@ -81,9 +103,12 @@ export default {
       }
       this.selectedItemIdx = idx
     },
+    appBoardClicked () {
+      this.displayAppSelectModal = true
+    },
     updateMenuItems () {
-      let items = [{name: 'Anr Issues', icon: 'ban', to: '/anr'},
-        {name: 'Missing dSYMs', icon: 'cloud-upload-alt', to: '/missing_dsym'}]
+      let items = [{name: 'Anr Issues', icon: 'ban', to: `/app/${this.selectedApp.appIdentifier}/anr`},
+        {name: 'Missing dSYMs', icon: 'cloud-upload-alt', to: `/app/${this.selectedApp.appIdentifier}/missing_dsym`}]
       for (let idx = 0; idx < items.length; ++idx) {
         let item = items[idx]
         if (this.selectedItemIdx === idx) {
@@ -95,27 +120,47 @@ export default {
       this.menuItems = items
     },
     updateNavis (path) {
-      if (path.includes('/anr/issue_detail/') && path.includes('session')) {
-        this.navis = [{to: '/anr', name: 'Anr Issues'}, {name: 'Issue Details'}]
+      if (typeof path === 'undefined') {
+        path = this.$route.path
+      }
+      if (path.includes('/issue_detail') && path.includes('session')) {
+        this.navis = [{to: `/app/${this.selectedApp.appIdentifier}/anr`, name: 'Anr Issues'}, {name: 'Issue Details'}]
       } else if (this.selectedItemIdx === 0 || this.selectedItemIdx === -1 || path === '/' || path === '') {
-        this.navis = [{to: '/anr', name: 'Anr Issues'}]
+        this.navis = [{to: `/app/${this.selectedApp.appIdentifier}/anr`, name: 'Anr Issues'}]
       } else {
         this.navis = [{name: 'Missing dSYMs'}]
       }
+    },
+    selectedAppChanged (newValue) {
+      this.displayAppSelectModal = false
+      this.setSelectedAppIdx(newValue)
+      this.$router.push(`/app/${this.selectedApp.appIdentifier}/anr`)
+      this.menuItemClicked(0, true)
     }
   },
   beforeMount () {
-    let path = this.$route.path
-    if (path.startsWith('/anr')) {
-      this.selectedItemIdx = 0
-    } else if (path.startsWith('/missing_dsym')) {
-      this.selectedItemIdx = 1
-    } else if (path === '/' || path === '') {
-      this.selectedItemIdx = 0
-      this.updateMenuItems()
-      this.menuItemClicked(this.selectedItemIdx)
-    }
-    this.updateNavis(path)
+    this.getApps().then(() => {
+      let aid = this.$route.params.aid
+      if (aid) {
+        for (let idx = 0; idx < this.apps.length; ++idx) {
+          let app = this.apps[idx]
+          if (app.appIdentifier === aid) {
+            this.setSelectedAppIdx(idx)
+          }
+        }
+      }
+      let path = this.$route.path
+      if (path.startsWith('/app') && path.includes('anr')) {
+        this.selectedItemIdx = 0
+      } else if (path.startsWith('/app') && path.includes('missing_dsym')) {
+        this.selectedItemIdx = 1
+      } else {
+        this.selectedItemIdx = 0
+        this.updateMenuItems()
+        this.menuItemClicked(this.selectedItemIdx, true)
+      }
+      this.updateNavis(path)
+    })
   }
 }
 </script>
@@ -138,6 +183,7 @@ export default {
             position: fixed;
         }
         .app-board {
+            cursor: pointer;
             font-size: 16px;
             color: white;
             height: 100px;
@@ -145,6 +191,9 @@ export default {
             align-items: center;
             transition: background ease 0.3s;
             border-bottom: 1px solid rgb(32, 53, 61);
+            &:hover {
+                background: rgba(20, 52, 79, 0.3);
+            }
             .app-icon {
                 height: 30px;
                 width: 30px;
@@ -156,6 +205,7 @@ export default {
                 flex-direction: column;
                 margin-left: 10px;
                 margin-right: 20px;
+                max-width: 185px;
                 .app-name {
                     font-size: 16px;
                     font-weight: 500;

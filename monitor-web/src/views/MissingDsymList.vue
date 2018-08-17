@@ -15,7 +15,7 @@
                 </div>
             </div>
             <div slot="footer">
-                <Button type="primary" size="middle"  @click="confirm">确定</Button>
+                <Button type="primary" size="default"  @click="confirm">确定</Button>
             </div>
         </Modal>
         <div class="issueList">
@@ -26,7 +26,7 @@
                 <div class="issue-num" style="margin-right: auto">
                     {{count || 0}}
                 </div>
-                <i-circle style="margin-right: 5px" v-show="progress !== 100" :size="45" :percent="this.progress" dashboard>
+                <i-circle style="margin-right: 10px" v-show="progress !== 100" :size="45" :percent="this.progress" dashboard>
                     <span class="demo-circle-inner" style="font-size:10px">{{`${progress}%`}}</span>
                 </i-circle>
                 <label class="upload-label"
@@ -81,19 +81,20 @@ export default {
   },
   methods: {
     ...mapActions('missingDsym', ['getMissingDsyms']),
-    uploadDsyms: function (event) {
+    uploadDsyms (event) {
       let file = event.target.files[0]
       if (!file) {
         return
       }
+      this.progress = 0
       this.progressDisabled = true
       let dsymData = new FormData()
       dsymData.append('file', file)
-      this.process = 0
       uploadDsym(dsymData, process => {
-        this.progress = process
+        this.progress = Math.min(process, 50)
       })
         .then(response => {
+          this.progress = 100
           this.progressDisabled = false
           if (response.data.ret === '0') {
             this.succeedItems = response.data.data
@@ -102,13 +103,13 @@ export default {
             alert('ret error: ' + JSON.stringify(response.data))
           }
           event.target.value = null
-          this.getMissingDsyms()
+          this.getMissingDsyms({appId: this.$route.params.aid})
         })
         .catch(error => {
           this.progressDisabled = false
           alert(`Error: ${error}`)
           event.target.value = null
-          this.process = 100
+          this.progress = 100
         })
     },
     confirm () {
@@ -117,7 +118,13 @@ export default {
     }
   },
   beforeMount () {
-    this.getMissingDsyms()
+    this.getMissingDsyms({appId: this.$route.params.aid})
+  },
+  beforeRouteUpdate (to, from, next) {
+    if (to.name === from.name) { // 手动刷新数据
+      this.getMissingDsyms({appId: to.params.aid})
+    }
+    next()
   }
 }
 </script>

@@ -7,8 +7,8 @@ const state = () => {
 }
 
 const actions = {
-  async getMissingDsyms ({ commit }) {
-    let result = await getMissingDsyms()
+  async getMissingDsyms ({ commit }, {appId}) {
+    let result = await getMissingDsyms(appId)
     commit('setMissingDsyms', result.data)
   }
 }
