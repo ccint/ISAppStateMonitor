@@ -4,6 +4,7 @@ import {reSymbolicate} from '../API/resymbolicate'
 const state = () => {
   return {
     issueList: {total: 0, issues: []},
+    unclassfiedCount: 0,
     currentIssuePage: 1,
     issueDetail: {id: '', sessions: []},
     currentSession: {idx: -1, id: ''},
@@ -20,6 +21,7 @@ const actions = {
   async getIssueList ({ commit }, {start, pageSize, appId}) {
     let result = await getAllIssues(start, pageSize, appId)
     commit('setIssueList', {total: result.data.total || 0, issues: result.data.issues || []})
+    commit('setUnclassfiedCount', result.data.unclassfiedCount)
   },
   async getIssueDetail ({ commit, state }, {id}) {
     if (id !== state.issueDetail.id) {
@@ -67,6 +69,9 @@ const mutations = {
   },
   setApps (state, data) {
     state.apps = data
+  },
+  setUnclassfiedCount (state, data) {
+    state.unclassfiedCount = data
   }
 }
 

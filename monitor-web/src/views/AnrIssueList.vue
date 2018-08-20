@@ -8,6 +8,9 @@
                 <div class="issue-num">
                     {{totalIssues || 0}}
                 </div>
+                <div class="unsymbole-issue" @click="reClassfiedReports" v-if="unclassfiedCount > 0">
+                    {{`${unclassfiedCount} report are unclassified, press to resymbolicate!`}}
+                </div>
             </div>
             <IssueCell :info="issue"
                        v-for="(issue, idx) in issues"
@@ -28,6 +31,7 @@
 // @ is an alias to /src
 import IssueCell from '../components/IssueCell'
 import { mapState, mapActions, mapMutations } from 'vuex'
+import {reClassfiedReports} from '../API/resymbolicate'
 
 export default {
   name: 'anrIssueList',
@@ -45,7 +49,8 @@ export default {
       issueDetail: state => state.issueDetail,
       currentPage: state => state.currentIssuePage,
       totalIssues: state => state.issueList.total,
-      selectedApp: state => state.apps[state.selectedAppIdx] || {}
+      selectedApp: state => state.apps[state.selectedAppIdx] || {},
+      unclassfiedCount: state => state.unclassfiedCount
     })
   },
   methods: {
@@ -67,6 +72,11 @@ export default {
       let start = (this.currentPage - 1) * this.pageSize
       let pageSize = this.pageSize
       this.getIssueList({start, pageSize, appId})
+    },
+    reClassfiedReports () {
+      reClassfiedReports(this.selectedApp.appIdentifier).then(() => {
+        this.loadIssues(this.selectedApp.appIdentifier)
+      })
     }
   },
   beforeMount () {
@@ -112,6 +122,17 @@ export default {
                 font-weight: 400;
                 font-size: 23px;
                 letter-spacing: 0.5px
+            }
+            .unsymbole-issue {
+                margin-left: auto;
+                color: rgb(0, 139, 243);
+                font-weight: 500;
+                font-size: 14px;
+                cursor: pointer;
+                text-decoration: underline;
+                &:hover {
+                    color: rgba(0, 139, 243, 0.8);
+                }
             }
         }
     }

@@ -74,9 +74,8 @@ export default {
         border-right: 1px solid rgb(224, 229, 232);
     }
     .issue {
-        flex: 1 1 auto;
-        flex-shrink: 1;
         border-right: 1px solid rgb(224, 229, 232);
+        width: calc(100% - 450px);
     }
 
 </style>

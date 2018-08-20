@@ -135,6 +135,7 @@ export default {
       this.displayAppSelectModal = false
       this.setSelectedAppIdx(newValue)
       this.$router.push(`/app/${this.selectedApp.appIdentifier}/anr`)
+      this.updateMenuItems()
       this.menuItemClicked(0, true)
     }
   },
