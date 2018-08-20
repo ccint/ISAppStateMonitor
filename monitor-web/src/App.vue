@@ -143,11 +143,16 @@ export default {
     this.getApps().then(() => {
       let aid = this.$route.params.aid
       if (aid) {
+        let matched = false
         for (let idx = 0; idx < this.apps.length; ++idx) {
           let app = this.apps[idx]
           if (app.appIdentifier === aid) {
             this.setSelectedAppIdx(idx)
+            matched = true
           }
+        }
+        if (matched === false && this.apps.length > 0) {
+          this.selectedAppChanged(0)
         }
       }
       let path = this.$route.path
