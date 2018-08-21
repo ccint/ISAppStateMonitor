@@ -59,7 +59,7 @@ NSData   * ISNSDataFromLevelDBKey(ISLevelDBKey * key) {
     return [NSData dataWithBytes:key->data length:key->length];
 }
 
-NSString * getLibraryPath() {
+NSString * ISGetLibraryPath() {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES);
     return [paths objectAtIndex:0];
 }
@@ -71,7 +71,7 @@ NSString * const kISLevelDBChangeValue               = @"value";
 NSString * const kISLevelDBChangeKey                 = @"key";
 NSString * const kISLevelDBErrorOccurredNotification = @"kLevelDBErrorOccurredNotification";
 
-ISLevelDBOptions MakeLevelDBOptions() {
+ISLevelDBOptions ISMakeLevelDBOptions() {
     return (ISLevelDBOptions) {true, true, false, false, true, 0, 0};
 }
 
@@ -93,10 +93,10 @@ ISLevelDBOptions MakeLevelDBOptions() {
 @synthesize path = _path;
 
 + (ISLevelDBOptions) makeOptions {
-    return MakeLevelDBOptions();
+    return ISMakeLevelDBOptions();
 }
 - (id) initWithPath:(NSString *)path andName:(NSString *)name {
-    ISLevelDBOptions opts = MakeLevelDBOptions();
+    ISLevelDBOptions opts = ISMakeLevelDBOptions();
     return [self initWithPath:path name:name andOptions:opts];
 }
 - (id) initWithPath:(NSString *)path name:(NSString *)name andOptions:(ISLevelDBOptions)opts {
@@ -180,12 +180,12 @@ ISLevelDBOptions MakeLevelDBOptions() {
 }
 
 + (id) databaseInLibraryWithName:(NSString *)name {
-    ISLevelDBOptions opts = MakeLevelDBOptions();
+    ISLevelDBOptions opts = ISMakeLevelDBOptions();
     return [self databaseInLibraryWithName:name andOptions:opts];
 }
 + (id) databaseInLibraryWithName:(NSString *)name
                       andOptions:(ISLevelDBOptions)opts {
-    NSString *path = [getLibraryPath() stringByAppendingPathComponent:name];
+    NSString *path = [ISGetLibraryPath() stringByAppendingPathComponent:name];
     ISLevelDB *ldb = [[[self alloc] initWithPath:path name:name andOptions:opts] autorelease];
     return ldb;
 }
