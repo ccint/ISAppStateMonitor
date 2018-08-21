@@ -4,8 +4,6 @@ UPLOAD_DEBUG_SYMBOLS=1
 # 模拟器编译是否上传，1＝上传，0＝不上传，默认不上传
 UPLOAD_SIMULATOR_SYMBOLS=0
 
-env
-
 # 退出执行并打印提示信息
 exitWithMessage() {
 echo "--------------------------------"
@@ -110,4 +108,5 @@ for dsymFile in `find "$DSYM_FOLDER" -name "${PRODUCT_NAME}.*.dSYM"`; do
 echo "Found dSYM file: $dsymFile"
 uploadDSYM $dsymFile
 done
+
 
