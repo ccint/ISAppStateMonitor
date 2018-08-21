@@ -1,9 +1,9 @@
 <template>
     <div class="layout">
-        <Modal  v-model="displayAppSelectModal"  width="200" title="选择App">
+        <Modal  v-model="displayAppSelectModal"  width="400" title="选择App">
             <RadioGroup :value="selectedAppIdx" @input="selectedAppChanged" vertical>
                 <Radio v-for="(app, idx) in apps" :label="idx" :key="app.appIdentifier">
-                    <span>{{app.appName}}</span>
+                    <span>{{app.appIdentifier}}</span>
                 </Radio>
             </RadioGroup>
             <div slot="footer">
