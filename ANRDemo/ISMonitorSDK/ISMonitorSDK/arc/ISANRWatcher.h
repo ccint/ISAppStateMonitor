@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @interface ISANRWatcher : NSObject
-+ (void)setUploadHost:(NSString *)host;
++ (void)setUploadHost:(NSString *)host isDebug:(BOOL)isDebug;
 + (void)startWatch:(uint64_t)runloopThreshold;
 + (void)stopWatch;
 + (int)logCount;

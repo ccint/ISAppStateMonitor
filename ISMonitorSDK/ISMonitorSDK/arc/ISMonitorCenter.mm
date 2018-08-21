@@ -21,6 +21,7 @@
 @property (nonatomic, strong) NSURLSession *sharedURLSession;
 @property (nonatomic, strong) NSOperationQueue *sessionQueue;
 @property (nonatomic, strong) NSString *serverHost;
+@property (nonatomic, assign) BOOL isDebug;
 @end
 
 @implementation ISMonitorCenter
@@ -39,6 +40,7 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
              ++it) {
             ISSerialization *bufferInfo = [[ISSerialization alloc] init];
             uintptr_t address = *it;
+            
             ISBinaryImage::ISBinaryImageInfo *matchedImage = ISBinaryImage::imageContainesAddress(address);
             if (matchedImage) {
                 NSString *imageName = [NSString stringWithCString:matchedImage->imageName
@@ -136,8 +138,14 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
     return sharedInstance;
 }
 
-+ (void)setUploadHost:(NSString *)host {
-    [self sharedInstance].serverHost = host;
++ (void)setUploadHost:(NSString *)host isDebug:(BOOL)isDebug {
+    auto sharedCenter = [self sharedInstance];
+    sharedCenter.isDebug = isDebug;
+    sharedCenter.serverHost = host;
+    
+    if (isDebug) {
+        sharedCenter.appId = [sharedCenter.appId stringByAppendingString:@".DEBUG"];
+    }
 }
 
 + (void)logMainTreadTimeoutWithResult:(ISMainThreadChecker::CheckerResultPtr)checkerResultPtr {
@@ -154,20 +162,19 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
         [serialization setDouble:[[NSDate date] timeIntervalSince1970] * 1000 forKey:@"time"];
         NSData *logData = [serialization generateDataFromDictionary];
         if (logData) {
-            char logIdBuffer[30] = {0};
-            sprintf(logIdBuffer,
-                    "mt_out_%llu",
-                    (unsigned long long)(CFAbsoluteTimeGetCurrent() * 1000));
-            NSString *logId = [[NSString alloc] initWithCString:logIdBuffer
-                                                       encoding:NSUTF8StringEncoding];
-            [sharedInstance.logDB setObject:logData forKey:logId];
-            [self uploadData];
-            [sharedInstance.logDB removeObjectForKey:logId];
+            [self uploadData:@[logData]];
+//            char logIdBuffer[30] = {0};
+//            sprintf(logIdBuffer,
+//                    "mt_out_%llu",
+//                    (unsigned long long)(CFAbsoluteTimeGetCurrent() * 1000));
+//            NSString *logId = [[NSString alloc] initWithCString:logIdBuffer
+//                                                       encoding:NSUTF8StringEncoding];
+//            [sharedInstance.logDB setObject:logData forKey:logId];
         }
     });
 }
 
-+ (void)uploadData {
++ (void)uploadDataFromDatabase {
     NSMutableArray<NSData *> *mainThreadTimeoutLogs = [[NSMutableArray alloc] init];
     ISMonitorCenter *sharedCenter = [self sharedInstance];
     [sharedCenter.logDB enumerateKeysAndObjectsBackward:YES
@@ -182,38 +189,50 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                                              }];
     
     if (mainThreadTimeoutLogs.count) {
-        ISSerialization *serialization = [[ISSerialization alloc] init];
-        [mainThreadTimeoutLogs enumerateObjectsUsingBlock:^(NSData * _Nonnull obj,
-                                                            NSUInteger idx,
-                                                            BOOL * _Nonnull stop) {
-            [serialization appendData:obj];
-        }];
-        
-        NSData *logData = [serialization generateDataFromArray];
-        [serialization setData:[@"mt_out" dataUsingEncoding:NSUTF8StringEncoding] forKey:@"type"];
-        [serialization setData:logData forKey:@"data"];
-        [serialization setString:sharedCenter.appVersion forKey:@"app_ver"];
-        [serialization setString:sharedCenter.appId forKey:@"app_id"];
-        [serialization setString:sharedCenter.systemVersion forKey:@"sys_ver"];
-        [serialization setString:[self arch] forKey:@"arch"];
-        NSData *finalData = [serialization generateDataFromDictionary];
-        if (!finalData) {
-            return;
-        }
-        
-        NSURLSession *session = sharedCenter.sharedURLSession;
-        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/report", sharedCenter.serverHost]];
-        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-        request.HTTPMethod = @"POST";
-        request.HTTPBody = finalData;
-        NSURLSessionDataTask *dataTask =
-        [session dataTaskWithRequest:request
-                   completionHandler:^(NSData * _Nullable data,
-                                       NSURLResponse * _Nullable response,
-                                       NSError * _Nullable error) {
-                   }];
-        [dataTask resume];
+        [self uploadData:mainThreadTimeoutLogs];
+        [sharedCenter.logDB removeAllObjects];
     }
+}
+
++ (void)uploadData:(NSArray<NSData *> *)logDatas {
+    if (logDatas.count <= 0) {
+        return;
+    }
+    
+    auto sharedCenter = [self sharedInstance];
+    
+    ISSerialization *serialization = [[ISSerialization alloc] init];
+    [logDatas enumerateObjectsUsingBlock:^(NSData * _Nonnull obj,
+                                                        NSUInteger idx,
+                                                        BOOL * _Nonnull stop) {
+        [serialization appendData:obj];
+    }];
+    
+    NSData *logData = [serialization generateDataFromArray];
+    [serialization setData:[@"mt_out" dataUsingEncoding:NSUTF8StringEncoding] forKey:@"type"];
+    [serialization setData:logData forKey:@"data"];
+    [serialization setString:sharedCenter.appVersion forKey:@"app_ver"];
+    [serialization setString:sharedCenter.appId forKey:@"app_id"];
+    [serialization setString:sharedCenter.systemVersion forKey:@"sys_ver"];
+    [serialization setString:[self arch] forKey:@"arch"];
+    NSData *finalData = [serialization generateDataFromDictionary];
+    if (!finalData) {
+        return;
+    }
+    
+    NSURLSession *session = sharedCenter.sharedURLSession;
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/report", sharedCenter.serverHost]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = finalData;
+    NSURLSessionDataTask *dataTask =
+    [session dataTaskWithRequest:request
+               completionHandler:^(NSData * _Nullable data,
+                                   NSURLResponse * _Nullable response,
+                                   NSError * _Nullable error) {
+                   
+               }];
+    [dataTask resume];
 }
 
 + (NSString *)arch {

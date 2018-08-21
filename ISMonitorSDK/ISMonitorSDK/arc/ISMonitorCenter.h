@@ -11,7 +11,7 @@
 
 @interface ISMonitorCenter : NSObject
 
-+ (void)setUploadHost:(NSString *)host;
++ (void)setUploadHost:(NSString *)host  isDebug:(BOOL)isDebug;
 
 + (void)logMainTreadTimeoutWithResult:(ISMainThreadChecker::CheckerResultPtr)checkerResultPtr;
 

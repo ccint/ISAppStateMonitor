@@ -11,8 +11,8 @@
 #import "ISMonitorCenter.h"
 
 @implementation ISANRWatcher
-+ (void)setUploadHost:(NSString *)host {
-    [ISMonitorCenter setUploadHost:host];
++ (void)setUploadHost:(NSString *)host isDebug:(BOOL)isDebug {
+    [ISMonitorCenter setUploadHost:host isDebug:isDebug];
 }
 
 + (void)startWatch:(uint64_t)runloopThreshold {
