@@ -22,7 +22,7 @@
 #ifdef DEBUG
     isDebug = YES;
 #endif
-    [ISANRWatcher setUploadHost:@"https://127.0.0.1:4001" isDebug:isDebug];
+    [ISANRWatcher setUploadHost:@"https://192.168.16.84:4001" isDebug:isDebug];
     [ISANRWatcher startWatch:100];
     return YES;
 }

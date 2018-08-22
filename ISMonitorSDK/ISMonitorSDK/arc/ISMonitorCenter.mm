@@ -47,8 +47,11 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                                                          encoding:NSUTF8StringEncoding];
                 NSString *uuid = [NSString stringWithCString:matchedImage->uuid
                                                     encoding:NSUTF8StringEncoding];
-                [bufferInfo setString:imageName
-                               forKey:@"mod_name"];
+                if (uuid.length) {
+                    uuid = [uuid stringByReplacingOccurrencesOfString:@"-" withString:@""];
+                }
+                [bufferInfo setString:uuid
+                               forKey:@"image_uuid"];
                 [bufferInfo setData:[NSData dataWithBytes:&address
                                                    length:sizeof(uintptr_t)]
                              forKey:@"ret_adr"];
@@ -56,8 +59,8 @@ NSData *getStackData(ISBSRecorder::Stacks & stacks) {
                                                    length:sizeof(uintptr_t)]
                              forKey:@"load_adr"];
                 [threadInfo appendData:[bufferInfo generateDataFromDictionary]];
-                [imagesInfo setString:uuid
-                               forKey:imageName];
+                [imagesInfo setString:imageName
+                               forKey:uuid];
             } else {
                 // no match, just ignore
             }

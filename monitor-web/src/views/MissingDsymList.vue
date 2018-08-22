@@ -1,6 +1,6 @@
 <template>
     <div class="listcontaner">
-        <Modal v-model="displayModal" width="500" title="以下符号表导入成功">
+        <Modal v-model="displayModal" width="500" :title="`${succeedItems.length}份符号表导入成功`">
             <div style="display: flex; flex-direction: column; max-height: 400px; overflow-y: scroll">
                 <div style="display: flex; flex: 1 0 auto;
                 justify-content: space-between;
