@@ -22,7 +22,8 @@ func main() {
 	http.HandleFunc("/issue_session", routers.GetReportDetail)
 	http.HandleFunc("/missing_dsym", routers.GetAllMissingDYSM)
 	http.HandleFunc("/resymbolicate", routers.HanleReSymbolicate)
+	http.HandleFunc("/reClassfiedReports", routers.HandlerReClassfiedReports)
 
-	go http.ListenAndServe(":4000", nil)
+	go http.ListenAndServe(":4023", nil)
 	http.ListenAndServeTLS(":4001", "./certificate/server.cer", "./certificate/server.key",nil)
 }

@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"time"
 	"../logger"
+	"../appDsymStore"
 	"fmt"
 )
 
@@ -96,6 +97,12 @@ func ImportDSYMTable(filePath string) (string, error) {
 		elements := strings.Split(line, "\u0009")
 		if len(elements) == 2 && elements[0] == "UUID:" {
 			uuid = strings.ToUpper(elements[1])
+			if appDsymStore.IsAppDsymRecordExist(uuid) {
+				logger.Log.Info(
+					fmt.Sprintf("skip import %s, already exist, uuid %s",
+						filePath, uuid))
+				return uuid, nil
+			}
 		} else if len(elements) >= 3 && len(uuid) > 0 {
 			startAdr, err0 := strconv.ParseUint(elements[0], 16, 0)
 			if err0 != nil {
@@ -112,7 +119,7 @@ func ImportDSYMTable(filePath string) (string, error) {
 				symbol = demangleSwiftSymbol(symbol)
 			}
 
-			if len(elements) == 4 {
+			if len(elements) >= 4 {
 				symbol = symbol + "\u0009" + elements[3]
 			}
 

@@ -9,12 +9,11 @@ import (
 	"sync"
 	"../symbolization"
 	"../logger"
+	"../store"
 	"fmt"
 )
 
 var (
-	mgoSession *mgo.Session
-	hosts             = 	[]string {"127.0.0.1:27017"}
 	dataBase          =  	"database"
 	reportCollection  =  	"anrReport"
 	issueCollection   =   	"issue"
@@ -23,11 +22,13 @@ var (
 	missingDSYMs      =     Cache{make(map[string] interface{}), sync.RWMutex{}}
 	issues            =     Cache{make(map[string] interface{}), sync.RWMutex{}}
 	apps 			  =     Cache{make(map[string] interface{}), sync.RWMutex{}}
+	unClassfiedCount  =     Cache{make(map[string] interface{}), sync.RWMutex{}}
 )
 
 type (
 	Frame struct {
 		ImageName   string
+		ImageUUID   string
 		RetAddress  uint64
 		LoadAddress uint64
 		RetSymbol   string
@@ -57,7 +58,7 @@ type (
 		Duration    float64
 		Timestamp   float64
 		Backtrace   Backtrace
-		Issue       bson.ObjectId
+		Issue       string
 	}
 
 	Issue struct {
@@ -78,9 +79,9 @@ type (
 		UUID			string
 		Arch			string
 		AppName			string
-		AppIdentifier   string
 		AppVersion 		string
 		SystemVersion	string
+		AppIdentifiers  []string
 	}
 
 	App struct {
@@ -95,32 +96,12 @@ type (
 	}
 )
 
-func getSession() *mgo.Session {
-	if mgoSession == nil {
-		var err error
-
-		mongoDBDialInfo := &mgo.DialInfo{
-			Addrs:     hosts,
-			Direct:    false,
-			Timeout:   time.Second * 1,
-			PoolLimit: 4096,
-		}
-
-		mgoSession, err = mgo.DialWithInfo(mongoDBDialInfo)
-
-		if err != nil {
-			panic(err)
-		}
-	}
-	return mgoSession.Copy()
-}
-
 func (s *AnrReport) Init() {
 	s.ReportId = bson.NewObjectId()
 }
 
 func (s *AnrReport) SaveToStorage() error {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	if isInBulk {
@@ -135,25 +116,23 @@ func (s *AnrReport) SaveToStorage() error {
 }
 
 func (s *AnrReport)UpdateToStorage() error {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 	c := session.DB(dataBase).C(reportCollection)
 	return c.UpdateId(s.ReportId, s)
 }
 
-func (s *AnrReport) updateOrCreateNewIssueAndApp(session *mgo.Session) {
-	identifier, sourceFile := s.getIssueIdentifierAndSourceFile()
-
-	if identifier == nil {
-		logger.Log.Error("identifier is nil")
+func (s *AnrReport) updateOrCreateNewIssue (session *mgo.Session) {
+	if s.Backtrace.IsSymbolized == false {
 		return
 	}
 
-	app := App{}
-	app.Init()
-	app.AppName = s.Backtrace.AppImageName
-	app.AppIdentifier = s.AppId
-	app.SaveToStorage()
+	identifier, sourceFile := s.getIssueIdentifierAndSourceFile()
+
+	if identifier == nil || len(*identifier) <= 0 {
+		logger.Log.Error("cannot get identifier of report: ", s.ReportId.Hex())
+		return
+	}
 
 	issue := Issue{}
 	issue.IssueIdentifier = *identifier
@@ -167,39 +146,62 @@ func (s *AnrReport) updateOrCreateNewIssueAndApp(session *mgo.Session) {
 	updateIssueErr := issue.SaveToStorage(session)
 
 	if updateIssueErr == nil {
-		s.Issue = issue.IssueId
+		s.Issue = issue.IssueId.Hex()
 	}
+}
+
+func (s *AnrReport) tryCreateNewApp () {
+	app := App{}
+	app.Init()
+	app.AppName = s.Backtrace.AppImageName
+	app.AppIdentifier = s.AppId
+	app.SaveToStorage()
+}
+
+func (s *AnrReport) recordUnclassfiedCount () {
+	if len(s.Issue) <= 0 {
+		increaseUnClassfiedCount(s.AppId)
+	}
+}
+
+func (s *AnrReport) updateOrCreateNewIssueAndApp(session *mgo.Session) {
+
+	s.tryCreateNewApp()
+
+	s.updateOrCreateNewIssue(session)
+
+	s.recordUnclassfiedCount()
 }
 
 func (s *AnrReport) getIssueIdentifierAndSourceFile() (*string, *string) {
 	if len(s.Backtrace.Stacks) == 0 || len(s.Backtrace.Stacks[0].Frames) == 0 {
 		return nil, nil
 	}
-	identifier := new(string)
-	sourceFile := new(string)
+	var identifier string
+	var sourceFile string
 
 	mainStack := s.Backtrace.Stacks[0]
 	for _, frame := range  mainStack.Frames {
 		if frame.ImageName == s.Backtrace.AppImageName && !strings.Contains(frame.RetSymbol,"main.m") {
-			*identifier = frame.RetSymbol
+			identifier = frame.RetSymbol
 			splits := strings.Split(frame.RetSymbol, "\u0009")
 			if len(splits) > 1 {
-				*sourceFile = splits[len(splits) - 1]
+				sourceFile = splits[len(splits) - 1]
 			} else {
-				*sourceFile = frame.ImageName
+				sourceFile = frame.ImageName
 			}
-			return identifier, sourceFile
+			return &identifier, &sourceFile
 		}
 	}
 
-	*identifier = mainStack.Frames[0].RetSymbol
-	*sourceFile = mainStack.Frames[0].ImageName
-	return identifier, sourceFile
+	identifier = mainStack.Frames[0].RetSymbol
+	sourceFile = mainStack.Frames[0].ImageName
+
+	return &identifier, &sourceFile
 }
 
 func (s *AnrReport)Symbolicate() {
 	bs := &(s.Backtrace)
-	imagesMap := bs.ImageMaps
 
 	stacks := &(bs.Stacks)
 
@@ -210,19 +212,23 @@ func (s *AnrReport)Symbolicate() {
 
 		for i := 0; i < len(*frams); i++ {
 			frame := &((*frams)[i])
-			if uuid, ok := imagesMap[frame.ImageName]; ok == true {
+			if len(frame.RetSymbol) > 0 {
+				continue
+			}
+
+			if len(frame.ImageUUID) > 0 {
 				offset := frame.RetAddress - frame.LoadAddress
-				v, err := symbolization.Symbol(offset, uuid)
+				v, err := symbolization.Symbol(offset, frame.ImageUUID)
 				if err != nil {
 					// not found, add missing dsym record
 					missingDsym := MissingDSYM{}
 					missingDsym.Init()
 					missingDsym.Name = frame.ImageName
-					missingDsym.UUID = uuid
+					missingDsym.UUID = frame.ImageUUID
 					missingDsym.Arch = s.Arch
 					missingDsym.AppVersion = s.AppVersion
 					missingDsym.AppName = bs.AppImageName
-					missingDsym.AppIdentifier = s.AppId
+					missingDsym.AppIdentifiers = []string{s.AppId}
 					missingDsym.SystemVersion = s.SysVersion
 					missingDsym.SaveToStorage()
 				} else {
@@ -252,7 +258,7 @@ func FinishReportBulk() (error) {
 		isInBulk = false
 		return nil
 	}
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 	bulk := session.DB(dataBase).C(reportCollection).Bulk()
 	bulk.Insert(*reportBuffer...)
@@ -268,7 +274,7 @@ func (s *Issue) Init() {
 func (s *Issue) SaveToStorage(inSession *mgo.Session) error {
 	session := inSession
 	if session == nil {
-		session = getSession()
+		session = store.GetSession()
 		defer session.Close()
 	}
 
@@ -318,25 +324,49 @@ func (s *MissingDSYM) SaveToStorage() error {
 		return errors.New("UUID is Invalid")
 	}
 
+	if len(s.AppIdentifiers) <= 0 {
+		return errors.New("appidentifier not exist when save missingdsym, just ignore")
+	}
+
 	missingDSYMs.mutex.Lock()
 	defer missingDSYMs.mutex.Unlock()
 
-	if _, ok := missingDSYMs.data[s.UUID]; ok == true {
-		return nil
+	var oldDsym *MissingDSYM
+
+	if v, ok := missingDSYMs.data[s.UUID]; ok == true {
+		oldDsym = v.(*MissingDSYM)
+		if oldDsym.AppIsIncluded(s.AppIdentifiers[0]) {
+			return nil
+		} else {
+			oldDsym.AppIdentifiers = append(oldDsym.AppIdentifiers, s.AppIdentifiers[0])
+		}
 	}
 
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	c := session.DB(dataBase).C(dsymCollection)
 
-	err := c.Insert(s)
+	var err error
 
-	if err == nil {
-		missingDSYMs.data[s.UUID] = *s
+	if oldDsym != nil {
+		err = c.UpdateId(oldDsym.Id, oldDsym)
+	} else {
+		if err = c.Insert(s); err == nil {
+			missingDSYMs.data[s.UUID] = s
+		}
 	}
 
 	return err
+}
+
+func (s *MissingDSYM) AppIsIncluded (appidentifier string) bool {
+	for _, identifier := range s.AppIdentifiers {
+		if identifier == appidentifier {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *App) Init() {
@@ -359,7 +389,7 @@ func (s *App) SaveToStorage() error {
 		return nil
 	}
 
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	c := session.DB(dataBase).C(appCollection)
@@ -374,13 +404,13 @@ func (s *App) SaveToStorage() error {
 }
 
 func GetReportsOfIssue(issueId string) *[]string {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	var results []Issue
 
 	c := session.DB(dataBase).C(reportCollection)
-	err := c.Find(bson.M{"issue": bson.ObjectIdHex(issueId)}).Sort("-timestamp").All(&results)
+	err := c.Find(bson.M{"issue": issueId}).Sort("-timestamp").All(&results)
 	if err != nil {
 		logger.Log.Error("find reports of issue failed. ", err)
 	}
@@ -393,7 +423,7 @@ func GetReportsOfIssue(issueId string) *[]string {
 }
 
 func GetReportOfId (reportId string) AnrReport {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	var result AnrReport
@@ -410,10 +440,78 @@ func InitCacheData () {
 	initApp()
 	initIssues()
 	initMissingDsym()
+	initUnClassfiedCount()
+}
+
+func initUnClassfiedCount () {
+	session := store.GetSession()
+	defer session.Close()
+
+	var reports []AnrReport
+
+	c := session.DB(dataBase).C(reportCollection)
+	if err := c.Find(bson.M{"issue": ""}).All(&reports); err != nil {
+		logger.Log.Error("find all reports failed. ", err)
+	}
+
+	for _, report := range reports {
+		increaseUnClassfiedCount(report.AppId)
+	}
+}
+
+func increaseUnClassfiedCount (appid string) error {
+	if len(appid) <= 0 {
+		return errors.New("appid is nil, when increase unclassfiedCounts")
+	}
+
+	unClassfiedCount.mutex.Lock()
+	defer unClassfiedCount.mutex.Unlock()
+
+	var count int
+	if v, ok := unClassfiedCount.data[appid]; ok == true {
+		oldCount := v.(int)
+		count = oldCount + 1
+	} else {
+		count = 1
+	}
+	unClassfiedCount.data[appid] = count
+	return nil
+}
+
+
+func removeAllUnClassfiedCount (appid string) error {
+	if len(appid) <= 0 {
+		return errors.New("appid is nil, when reduce unclassfiedCounts")
+	}
+
+	unClassfiedCount.mutex.Lock()
+	defer unClassfiedCount.mutex.Unlock()
+
+	unClassfiedCount.data[appid] = 0
+	return nil
+}
+
+func reduceUnClassfiedCount (appid string, lockFree bool) error {
+	if len(appid) <= 0 {
+		return errors.New("appid is nil, when reduce unclassfiedCounts")
+	}
+
+	if lockFree == false {
+		unClassfiedCount.mutex.Lock()
+		defer unClassfiedCount.mutex.Unlock()
+	}
+
+	if v, ok := unClassfiedCount.data[appid]; ok == true {
+		oldCount := v.(int)
+		if oldCount >= 1 {
+			unClassfiedCount.data[appid] = oldCount - 1
+		}
+	}
+	return nil
 }
 
 func initMissingDsym () {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	var results []MissingDSYM
@@ -425,7 +523,7 @@ func initMissingDsym () {
 	}
 
 	for _, result := range results {
-		missingDSYMs.data[result.UUID] = result
+		missingDSYMs.data[result.UUID] = &result
 	}
 }
 
@@ -434,7 +532,7 @@ func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
 	defer missingDSYMs.mutex.Unlock()
 
 	if i, ok := missingDSYMs.data[uuid]; ok == true {
-		session := getSession()
+		session := store.GetSession()
 		defer session.Close()
 
 		c := session.DB(dataBase).C(dsymCollection)
@@ -444,8 +542,8 @@ func RemoveMissingDSYMS (uuid string) (*MissingDSYM, bool) {
 			return nil, false
 		}
 		delete(missingDSYMs.data, uuid)
-		dsym := i.(MissingDSYM)
-		return &dsym, true
+		dsym := i.(*MissingDSYM)
+		return dsym, true
 	} else {
 		return nil, false
 	}
@@ -462,9 +560,9 @@ func GetAllMissingDSYMs (appId string) *[]MissingDSYM {
 	defer missingDSYMs.mutex.RUnlock()
 
 	for _, v := range missingDSYMs.data {
-		dsym := v.(MissingDSYM)
-		if dsym.AppIdentifier == appId {
-			*results = append(*results, dsym)
+		dsym := v.(*MissingDSYM)
+		if dsym.AppIsIncluded(appId) == true {
+			*results = append(*results, *dsym)
 		}
 	}
 
@@ -472,7 +570,7 @@ func GetAllMissingDSYMs (appId string) *[]MissingDSYM {
 }
 
 func initApp () {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	var results []App
@@ -502,7 +600,7 @@ func GetAllApps () *[]App {
 }
 
 func initIssues () {
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	var results []Issue
@@ -550,10 +648,10 @@ func getIssue(appIdentifier string, issueIdentifier string, lockFree bool) (*Iss
 	return nil, false
 }
 
-func GetAllIssues(start int, pageSize int, appId string) (int, *[]Issue) {
+func GetAllIssues(start int, pageSize int, appId string) (int, *[]Issue, int) {
 	results := new([]Issue)
 
-	session := getSession()
+	session := store.GetSession()
 	defer session.Close()
 
 	c := session.DB(dataBase).C(issueCollection)
@@ -569,9 +667,44 @@ func GetAllIssues(start int, pageSize int, appId string) (int, *[]Issue) {
 	if v, ok := issues.data[appId]; ok == true {
 		issueMap := v.(map[string] Issue)
 		count = len(issueMap)
-	} else {
-		logger.Log.Error(fmt.Sprintf("issues cache for app %s cannot find.", appId))
 	}
 
-	return count, results
+	unClassfiedCount.mutex.RLock()
+	defer unClassfiedCount.mutex.RUnlock()
+	unClassfiedReportsCount := 0
+	if v, ok := unClassfiedCount.data[appId]; ok == true {
+		unClassfiedReportsCount = v.(int)
+	}
+
+	return count, results, unClassfiedReportsCount
+}
+
+func SymbolicateUnClassfiedReports (appid string) error {
+	if len(appid) <= 0 {
+		return errors.New("appid is nil when symbolicate unclassfied reports")
+	}
+
+	unClassfiedCount.mutex.Lock()
+	defer unClassfiedCount.mutex.Unlock()
+
+	session := store.GetSession()
+	defer session.Close()
+
+	var reports []AnrReport
+
+	c := session.DB(dataBase).C(reportCollection)
+	if err := c.Find(bson.M{"issue": "", "appid": appid}).All(&reports); err != nil {
+		return err
+	}
+
+	for _, report := range reports {
+		report.Symbolicate()
+		report.updateOrCreateNewIssue(session)
+		if err := report.UpdateToStorage(); err == nil && len(report.Issue) > 0 {
+			reduceUnClassfiedCount(appid, true)
+		} else if err != nil {
+			logger.Log.Error("update report failed when resymbolicate unclassfied report: ", report.ReportId.Hex())
+		}
+	}
+	return nil
 }

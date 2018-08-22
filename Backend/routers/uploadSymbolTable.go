@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"io"
-	"log"
 	"io/ioutil"
 	"archive/zip"
 	"path/filepath"
@@ -17,6 +16,12 @@ import (
 	"encoding/json"
 	"time"
 	"../logger"
+	"../appDsymStore"
+	"strconv"
+)
+
+var (
+	global_mutex = sync.Mutex{}
 )
 
 func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
@@ -26,6 +31,9 @@ func UploadDsymHandler(w http.ResponseWriter, req *http.Request) {
 func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 	ret := make(map[string] interface{})
 	ignoreRet := req.URL.Query().Get("ignore_ret")
+	appName := req.URL.Query().Get("appName")
+	isDebug := req.URL.Query().Get("isDebug")
+
 	switch req.Method {
 	case "POST":
 		ret["ret"] = "-1"
@@ -61,10 +69,15 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 
 		var result *[]map[string] string
 
+		isDebugBoolean := false
+		if v, err := strconv.ParseBool(isDebug); err == nil {
+			isDebugBoolean = v
+		}
+
 		if ignoreRet == "1" {
-			go handleDSYMFiles(tmpFilePath, fileUUID)
+			go handleDSYMFiles(tmpFilePath, fileUUID, appName, isDebugBoolean)
 		} else {
-			result = handleDSYMFiles(tmpFilePath, fileUUID)
+			result = handleDSYMFiles(tmpFilePath, fileUUID, appName, isDebugBoolean)
 			ret["data"] = result
 		}
 		ret["ret"] = "0"
@@ -78,7 +91,10 @@ func handleDsymReq(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(ret)
 }
 
-func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
+func handleDSYMFiles(filepath string, uuid string, appName string, isDebug bool) *[]map[string] string {
+
+	global_mutex.Lock()
+	defer global_mutex.Unlock()
 
 	now := time.Now()
 	logger.Log.Info("start handle dysm file")
@@ -86,32 +102,27 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 	destDir := "./resource/tmp/symbols/" + uuid
 
 	if err := Unzip(filepath, destDir); err != nil {
-		log.Fatal(err)
+		logger.Log.Error("Unzip dsym file failed: ", err)
 		return nil
 	}
 
 	{
 		files, err := ioutil.ReadDir(destDir)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log.Error("read unziped dsym dir failed: ", err)
 			return nil
 		}
 
-		var sg sync.WaitGroup
-		sg.Add(len(files))
-
 		for _, f := range files {
 			var fPath = destDir + "/" + f.Name()
-			genST(fPath, f.IsDir(), &sg)
+			genST(fPath, f.IsDir())
 		}
-
-		sg.Wait()
 	}
 
 	{
 		zips, err := ioutil.ReadDir(destDir)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log.Error("read dsymtable zips failed: ", err)
 			return nil
 		}
 
@@ -129,27 +140,19 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 	{
 		symbols, err := ioutil.ReadDir(destDir)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log.Error("read symbols failed: ", err)
 			return nil
 		}
 
-		var sg sync.WaitGroup
-
-		sg.Add(len(symbols))
-
-		mutex := sync.Mutex{}
-
 		for _, symbol := range symbols {
 			var sPath = destDir + "/" + symbol.Name()
-			go importDSYMTable(sPath, &sg, importResult, &mutex)
+			importDSYMTable(sPath, importResult)
 		}
-
-		sg.Wait()
 	}
 
-	//if err := os.RemoveAll(destDir); err != nil {
-	//	logger.Log.Error("clear symbol dir failed: ", err)
-	//}
+	if err := os.RemoveAll(destDir); err != nil {
+		logger.Log.Error("clear symbol dir failed: ", err)
+	}
 
 	if err := os.Remove(filepath); err != nil {
 		logger.Log.Error("clear upload file failed: ", err)
@@ -157,14 +160,18 @@ func handleDSYMFiles(filepath string, uuid string) *[]map[string] string {
 
 	logger.Log.Info("handle dysm finished, total cost time: ", time.Since(now))
 
+	if len(appName) > 0 {
+		for _, result := range *importResult {
+			if retuuid, ok := result["uuid"]; ok == true {
+				appDsymStore.AddAppDsymRecord(appName, retuuid, isDebug)
+			}
+		}
+	}
+
 	return importResult
 }
 
-func genST(fp string, isDir bool, group *sync.WaitGroup) {
-	if group != nil {
-		defer group.Done()
-	}
-
+func genST(fp string, isDir bool) {
 	fPabsolute, _ := filepath.Abs(fp)
 	tPabsolute, _ := filepath.Abs("./libs/symbolicate/buglySymboliOS.jar")
 
@@ -186,8 +193,7 @@ func genST(fp string, isDir bool, group *sync.WaitGroup) {
 	}
 }
 
-func importDSYMTable(filepath string, group *sync.WaitGroup, results *[]map[string] string, mutex *sync.Mutex) {
-	defer group.Done()
+func importDSYMTable(filepath string, results *[]map[string] string) {
 	if stUUID, err := symbolization.ImportDSYMTable(filepath); err == nil && len(stUUID) > 0 {
 		result := map[string] string{"uuid": stUUID}
 
@@ -196,9 +202,7 @@ func importDSYMTable(filepath string, group *sync.WaitGroup, results *[]map[stri
 			result["name"] = dsym.Name
 		}
 
-		mutex.Lock()
 		*results = append(*results, result)
-		mutex.Unlock()
 	}
 }
 

@@ -98,7 +98,7 @@ func getAllIssues(w http.ResponseWriter, req *http.Request) {
 	pageSize, _ :=  strconv.ParseInt(req.URL.Query().Get("pageSize"), 10, 64)
 	appId := req.URL.Query().Get("appId")
 
-	totalCount, issues := reportStore.GetAllIssues(int(start), int(pageSize), appId)
+	totalCount, issues, unclassfiedCount := reportStore.GetAllIssues(int(start), int(pageSize), appId)
 
 	ret := make(map[string] interface{})
 
@@ -116,6 +116,7 @@ func getAllIssues(w http.ResponseWriter, req *http.Request) {
 
 	ret["total"] = totalCount
 	ret["issues"] = *retIssues
+	ret["unclassfiedCount"] = unclassfiedCount
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")

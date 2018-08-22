@@ -9,9 +9,9 @@ import (
 	"../reportStore"
 	"github.com/tecbot/gorocksdb"
 	"log"
-	"strings"
 	"os"
 	"../logger"
+	"strings"
 )
 
 // Thread Pool
@@ -144,7 +144,8 @@ func archiveReport(report *[]byte) {
 			allKeys := uuidMap.Allkeys()
 			for i := 0; i < len(allKeys); i++ {
 				v, _ := uuidMap.StringWithKey(allKeys[i])
-				imageMaps[allKeys[i]] = strings.Replace(*v, "-", "", -1)
+				key := strings.ToUpper(allKeys[i])
+				imageMaps[key] = *v
 			}
 
 			backtrace.ImageMaps = imageMaps
@@ -166,11 +167,14 @@ func archiveReport(report *[]byte) {
 					for i := 0; i < threadBsArray.Count(); i++ {
 						frame := reportStore.Frame{}
 						threadBsDic, _ := threadBsArray.DicAtIndex(i)
-						modeName, _ := threadBsDic.StringWithKey("mod_name")
+						imageuuid, _ := threadBsDic.StringWithKey("image_uuid")
+						*imageuuid = strings.ToUpper(*imageuuid)
 						retAdr, _ := threadBsDic.Uint64WithKey("ret_adr")
 						loadAdr, _ := threadBsDic.Uint64WithKey("load_adr")
+						modeName, _ := imageMaps[*imageuuid]
 
-						frame.ImageName = *modeName
+						frame.ImageName = modeName
+						frame.ImageUUID = *imageuuid
 						frame.RetAddress = retAdr
 						frame.LoadAddress = loadAdr
 
