@@ -66,7 +66,7 @@ export default {
     },
     onPageChange (page) {
       this.setCurrentIssuePage(page)
-      this.loadIssues()
+      this.loadIssues(this.selectedApp.appIdentifier)
     },
     loadIssues (appId) {
       let start = (this.currentPage - 1) * this.pageSize
