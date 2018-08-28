@@ -1,5 +1,5 @@
 # Debug模式编译是否上传，1＝上传 0＝不上传，默认不上传
-UPLOAD_DEBUG_SYMBOLS=1
+UPLOAD_DEBUG_SYMBOLS=0
 
 # 模拟器编译是否上传，1＝上传，0＝不上传，默认不上传
 UPLOAD_SIMULATOR_SYMBOLS=0
